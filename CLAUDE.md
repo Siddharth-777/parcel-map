@@ -39,7 +39,24 @@ Full project context: @project_description.md
 
 ## Commands
 
-<!-- TODO: add as scripts are created (venv setup, run server, run pipeline, tests) -->
+```bash
+# Full stack (requires Docker)
+docker-compose up              # PostGIS + API on :8000
+
+# Backend only (local dev)
+cd backend
+python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+.venv/Scripts/uvicorn app.main:app --reload --port 8000
+
+# Frontend
+cd frontend
+npm install
+npm run dev                    # Vite dev server on :5173
+
+# AML (separate venv recommended — heavy deps)
+cd aml
+pip install -r requirements-aml.txt
+```
 
 ## Gotchas
 
