@@ -1,25 +1,25 @@
+# IMPORTS
 from enum import Enum
-
 from pydantic import BaseModel, Field
 
-
+# FEATURE TYPES
 class FeatureType(str, Enum):
     parcel = "parcel"
     building = "building"
     road = "road"
     landuse = "landuse"
 
-
+# COORDINATE TYPES
 class CoordinateSpace(str, Enum):
     pixel = "pixel"
     geo = "geo"
 
-
+# GEOJSON POLYGON
 class GeoJSONPolygon(BaseModel):
     type: str = "Polygon"
     coordinates: list[list[list[float]]]
 
-
+# RESPONSE SCHEMA
 class PolygonFeature(BaseModel):
     """Shared polygon schema — cross-team contract."""
 
@@ -30,7 +30,7 @@ class PolygonFeature(BaseModel):
     coordinate_space: CoordinateSpace
     geometry: GeoJSONPolygon
 
-
+# CREATE SCHEMA
 class PolygonFeatureCreate(BaseModel):
     """Create request — id is optional (server generates if omitted)."""
 
@@ -40,7 +40,7 @@ class PolygonFeatureCreate(BaseModel):
     coordinate_space: CoordinateSpace = CoordinateSpace.geo
     geometry: GeoJSONPolygon
 
-
+# UPDATE SCHEMA
 class PolygonFeatureUpdate(BaseModel):
     """Update request — all fields optional, only provided fields change."""
 
@@ -49,6 +49,6 @@ class PolygonFeatureUpdate(BaseModel):
     coordinate_space: CoordinateSpace | None = None
     geometry: GeoJSONPolygon | None = None
 
-
+# COLLECTION SCHEMA
 class PolygonFeatureCollection(BaseModel):
     features: list[PolygonFeature]

@@ -1,9 +1,10 @@
+# IMPORTS
 from sqlalchemy import Column, String, Float, Enum as SAEnum
 from geoalchemy2 import Geometry
 
 from app.core.database import Base
 
-
+# FEATURE MODEL
 class Feature(Base):
     __tablename__ = "features"
 

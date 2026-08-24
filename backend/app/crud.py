@@ -1,5 +1,5 @@
+# IMPORTS
 import uuid
-import json
 
 from sqlalchemy.orm import Session
 from geoalchemy2.shape import to_shape, from_shape
@@ -15,7 +15,7 @@ from app.schemas.polygon import (
     CoordinateSpace,
 )
 
-
+# DATABASE MODEL TO API SCHEMA
 def _model_to_schema(row: Feature) -> PolygonFeature:
     geom = to_shape(row.geometry)
     coords = mapping(geom)["coordinates"]
@@ -28,16 +28,16 @@ def _model_to_schema(row: Feature) -> PolygonFeature:
         geometry=GeoJSONPolygon(coordinates=list(coords)),
     )
 
-
+# LIST FEATURES
 def list_features(db: Session, feature_type: FeatureType) -> list[PolygonFeature]:
     rows = db.query(Feature).filter(Feature.type == feature_type.value).all()
     return [_model_to_schema(r) for r in rows]
 
-
+# GET FEATURE
 def get_feature(db: Session, feature_id: str) -> Feature | None:
     return db.query(Feature).filter(Feature.id == feature_id).first()
 
-
+# CREATE FEATURE
 def create_feature(db: Session, feature_type: FeatureType, data: PolygonFeatureCreate) -> PolygonFeature:
     feature_id = data.id or str(uuid.uuid4())
     geom_shape = shape({"type": "Polygon", "coordinates": data.geometry.coordinates})
@@ -54,7 +54,7 @@ def create_feature(db: Session, feature_type: FeatureType, data: PolygonFeatureC
     db.refresh(row)
     return _model_to_schema(row)
 
-
+# UPDATE FEATURE
 def update_feature(db: Session, row: Feature, data: PolygonFeatureUpdate) -> PolygonFeature:
     if data.confidence is not None:
         row.confidence = data.confidence
@@ -69,7 +69,7 @@ def update_feature(db: Session, row: Feature, data: PolygonFeatureUpdate) -> Pol
     db.refresh(row)
     return _model_to_schema(row)
 
-
+# DELETE FEATURE
 def delete_feature(db: Session, row: Feature) -> None:
     db.delete(row)
     db.commit()

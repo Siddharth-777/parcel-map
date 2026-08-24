@@ -1,19 +1,23 @@
+# IMPORTS
 import uuid
 
 from fastapi import APIRouter
 
-from app.schemas.polygon import PolygonFeature, PolygonFeatureCollection, FeatureType, CoordinateSpace, GeoJSONPolygon
+from app.schemas.polygon import (
+    PolygonFeature,
+    PolygonFeatureCollection,
+    FeatureType,
+    CoordinateSpace,
+    GeoJSONPolygon,
+)
 
+# ROUTER CONFIGURATION
 router = APIRouter(prefix="/inference", tags=["inference"])
 
-
+# MOCK INFERENCE
 @router.post("/run", response_model=PolygonFeatureCollection, summary="Run mock inference on an image")
 def run_inference(source_image: str = "drone_tile_001.tif"):
-    """Mock inference endpoint — returns dummy polygons matching the shared schema.
-
-    This unblocks frontend development before real AML models are integrated.
-    Replace internals with actual model call once aml/scripts/infer.py is ready.
-    """
+    # Return sample polygons until the real AML inference model is integrated.
     features = [
         PolygonFeature(
             id=str(uuid.uuid4()),
@@ -56,4 +60,5 @@ def run_inference(source_image: str = "drone_tile_001.tif"):
             ),
         ),
     ]
+
     return PolygonFeatureCollection(features=features)

@@ -1,3 +1,4 @@
+# IMPORTS
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,14 +8,14 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.routers import health, parcels, buildings, roads, landuse, inference, export
 
-
+# APPLICATION LIFESPAN
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.create_tables:
         Base.metadata.create_all(bind=engine)
     yield
 
-
+# FASTAPI APPLICATION
 app = FastAPI(
     title="Parcel Map API",
     description="AI cadastral mapping platform — feature extraction from drone imagery",
@@ -22,6 +23,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS CONFIGURATION
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,6 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# REGISTER ROUTERS
 app.include_router(health.router)
 app.include_router(parcels.router)
 app.include_router(buildings.router)
