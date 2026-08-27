@@ -1,0 +1,223 @@
+export const WORKSPACE_PARCELS = [
+  {
+    id: 'PCL-101',
+    name: 'Khasra Plot #101',
+    type: 'Agricultural Parcel',
+    coords: [
+      [12.9712, 77.5942],
+      [12.9726, 77.5950],
+      [12.9720, 77.5966],
+      [12.9706, 77.5958],
+    ],
+    color: '#10B981',
+    area: '2,450 m²',
+  },
+  {
+    id: 'PCL-102',
+    name: 'Khasra Plot #102',
+    type: 'Agricultural Parcel',
+    coords: [
+      [12.9726, 77.5950],
+      [12.9739, 77.5959],
+      [12.9732, 77.5976],
+      [12.9720, 77.5966],
+    ],
+    color: '#3B82F6',
+    area: '1,890 m²',
+  },
+  {
+    id: 'PCL-103',
+    name: 'Khasra Plot #103',
+    type: 'Residential Settlement (Abadi)',
+    coords: [
+      [12.9732, 77.5976],
+      [12.9744, 77.5985],
+      [12.9736, 77.6001],
+      [12.9724, 77.5992],
+    ],
+    color: '#8B5CF6',
+    area: '1,620 m²',
+  },
+];
+
+export const WORKSPACE_BUILDINGS = [
+  {
+    id: 'BLD-01',
+    name: 'Abadi Structure A',
+    coords: [
+      [12.9718, 77.5948],
+      [12.9722, 77.5953],
+      [12.9719, 77.5957],
+      [12.9715, 77.5952],
+    ],
+    color: '#EF4444',
+  },
+  {
+    id: 'BLD-02',
+    name: 'Borewell Pump House',
+    coords: [
+      [12.9730, 77.5962],
+      [12.9734, 77.5967],
+      [12.9731, 77.5970],
+      [12.9727, 77.5965],
+    ],
+    color: '#F97316',
+  },
+];
+
+export const WORKSPACE_ROADS = [
+  {
+    id: 'RD-01',
+    name: 'Village Main Road (गाँव सड़क)',
+    coords: [
+      [12.9705, 77.5940],
+      [12.9720, 77.5955],
+      [12.9745, 77.5980],
+    ],
+    color: '#F59E0B',
+  },
+];
+
+export const APPROVAL_PARCELS = [
+  {
+    id: 'P-101',
+    name: 'Khasra Plot #101',
+    khasraNo: 'Sy No. 101 / 1',
+    type: 'Agricultural Land',
+    area: '2,450 sq.m',
+    acres: '0.60 Acres',
+    perimeter: '210 m',
+    landUse: 'Agricultural',
+    buildings: 0,
+    coords: [
+      [12.9715, 77.5935],
+      [12.9728, 77.5942],
+      [12.9721, 77.5959],
+      [12.9708, 77.5949],
+    ],
+    color: '#10B981',
+    status: 'Approved',
+    owner: 'S. Sundaram & Co-owners',
+    verifiedBy: 'SOI / COSS Sub-Division Officer',
+  },
+  {
+    id: 'P-102',
+    name: 'Khasra Plot #102',
+    khasraNo: 'Sy No. 102 / 3',
+    type: 'Agricultural Land',
+    area: '1,890 sq.m',
+    acres: '0.46 Acres',
+    perimeter: '185 m',
+    landUse: 'Agricultural / Orchards',
+    buildings: 1,
+    coords: [
+      [12.9726, 77.5950],
+      [12.9739, 77.5959],
+      [12.9732, 77.5976],
+      [12.9720, 77.5966],
+    ],
+    color: '#10B981',
+    status: 'Approved',
+    owner: 'V. Ramanathan',
+    verifiedBy: 'SOI / COSS Sub-Division Officer',
+  },
+  {
+    id: 'P-103',
+    name: 'Khasra Plot #103',
+    khasraNo: 'Sy No. 103 / B',
+    type: 'Commercial Plot',
+    area: '3,120 sq.m',
+    acres: '0.77 Acres',
+    perimeter: '240 m',
+    landUse: 'Commercial Corridor',
+    buildings: 3,
+    coords: [
+      [12.9732, 77.5976],
+      [12.9744, 77.5985],
+      [12.9736, 77.6001],
+      [12.9724, 77.5992],
+    ],
+    color: '#F59E0B',
+    status: 'Pending Review',
+    owner: 'K. Balaji Properties',
+    verifiedBy: 'Pending GT Sign-off',
+  },
+  {
+    id: 'P-104',
+    name: 'Khasra Plot #104',
+    khasraNo: 'Sy No. 104 / 2A',
+    type: 'Residential Settlement',
+    area: '1,480 sq.m',
+    acres: '0.36 Acres',
+    perimeter: '173 m',
+    landUse: 'Residential / Abadi',
+    buildings: 2,
+    coords: [
+      [12.9708, 77.5949],
+      [12.9720, 77.5966],
+      [12.9714, 77.5978],
+      [12.9701, 77.5962],
+    ],
+    color: '#10B981',
+    status: 'Approved',
+    owner: 'Ramakrishna Pillai & Legal Heirs',
+    verifiedBy: 'SOI / COSS Sub-Division Officer',
+  },
+];
+
+export const APPROVAL_GCP_POINTS = [
+  { id: 'GCP-01', name: 'CORS Station Ramnagar-A', coords: [12.9718, 77.5938], type: 'Fixed Base Station' },
+  { id: 'GCP-02', name: 'CORS Station Ramnagar-B', coords: [12.9735, 77.5995], type: 'Rover Check Point' },
+  { id: 'GCP-03', name: 'Boundary Marker #104 (सी.मा.)', coords: [12.9708, 77.5949], type: 'Cadastral Stone' },
+];
+
+export const INITIAL_REVIEW_QUEUE = [
+  {
+    id: 'PCL-14',
+    type: 'Parcel Boundary',
+    confidence: '91.2%',
+    issue: 'Ambiguous boundary edge under tree canopy shadow',
+    status: 'Needs Review',
+    severity: 'warning',
+  },
+  {
+    id: 'BLD-27',
+    type: 'Building Footprint',
+    confidence: '88.5%',
+    issue: 'Upper floor cantilever overhang > ground footprint',
+    status: 'Needs Review',
+    severity: 'warning',
+  },
+  {
+    id: 'RD-05',
+    type: 'Road Segment',
+    confidence: '93.0%',
+    issue: 'Narrow access pathway width < 2.5m transition',
+    status: 'Reviewed',
+    severity: 'info',
+  },
+  {
+    id: 'PCL-08',
+    type: 'Parcel Boundary',
+    confidence: '99.4%',
+    issue: 'Zero topology issues; CORS GCP lock verified',
+    status: 'Approved',
+    severity: 'success',
+  },
+  {
+    id: 'BLD-12',
+    type: 'Building Footprint',
+    confidence: '98.9%',
+    issue: 'Abadi residential footprint verified with DSM model',
+    status: 'Approved',
+    severity: 'success',
+  },
+  {
+    id: 'PCL-19',
+    type: 'Parcel Boundary',
+    confidence: '92.4%',
+    issue: 'Boundary stone (सी.मा.) marker offset check',
+    status: 'Needs Review',
+    severity: 'warning',
+  },
+];

@@ -46,4 +46,7 @@ docker-compose.override.yml
 .ipynb_checkpoints/
 
 aml
-frontend
+
+frontend/.env
+
+public/indian_cadastral_map.jpg
