@@ -93,6 +93,57 @@ mirrors how the real NAKSHA pipeline handles areas without legacy records),
 not as the only or primary method now that real GT exists for at least one
 state.
 
+## External reference — Project Vaayu (SIH 1705, GitHub: Kabeer2004/ProjectVaayu)
+
+**What it is**: an open-sourced repo from a team that tackled the near-identical
+problem (SVAMITVA drone imagery feature extraction) for a different hackathon,
+sponsored by the Ministry of Panchayati Raj rather than DoLR/NAKSHA, but same
+underlying scheme mechanics.
+
+**Boundary — read this before using anything below**: this is a *methodology*
+reference only. Their dataset (Ministry-provided ECW basemaps + SHP annotation
+files, processed into 3000×3000 tiles) is **not available to us** and is not
+the same as our Kaggle svamitva-drone-aerial-images dataset (1024×1024 PNG
+images + RGB segmentation masks, 5 classes). Do not write any code that
+assumes access to their data, file formats, or tile size. Our data source
+stays exactly as documented above.
+
+**What's genuinely useful from their writeup:**
+
+1. **Independent validation of our locked-in model choice.** They tried SAM,
+   LangSAM, Detectron2, and FPN before landing on U-Net++ as the best
+   performer for buildings and roads — the exact same architecture already
+   locked into this project's MVP plan. This isn't a coincidence to ignore;
+   it's a second team, independently, converging on the same answer.
+
+2. **Independent validation of the rooftop-classification method.** They
+   fine-tuned their building-segmentation U-Net++'s weights to classify
+   rooftop type (RCC/Tin/Tiled/Other) — this is the exact same technique
+   already locked into this project's land-use MVP approach. Strong
+   confirmation this is a sound, proven method, not just a clever guess.
+
+3. **One real risk worth noting**: their LangSAM testing found it handled
+   sparse/isolated buildings fine but struggled badly with closely-packed
+   buildings (overlapping bounding boxes). This is directly relevant — dense
+   urban settlements are explicitly named as a core challenge in our own
+   problem statement. Not a reason to change our model choice (we're using
+   U-Net++, not LangSAM), but a reason to specifically check building-density
+   performance during our own validation, not just overall accuracy.
+
+4. **A technical gotcha worth knowing in advance**: they found that once
+   georeferenced input tiles pass through a segmentation model, the output
+   masks lose their georeferencing (GeoTIFF → plain TIF) — `gdal_polygonize`
+   then can't place them correctly. Fix: reapply the geotransform from the
+   input tile to the output tile post-inference, since they correspond 1:1.
+   Only relevant to us if/when we start using georeferenced imagery (e.g. if
+   the TestGeoTiff investigation from the Kaggle dataset turns up something
+   usable) — not relevant for pixel-space-only work.
+
+5. Their other model comparison notes (Detectron2 good for water bodies but
+   blotchy for buildings, FPN good for roads but same blotchy-buildings issue)
+   are useful context for *why* U-Net++ won, not actionable for us directly
+   since we're not re-running that comparison ourselves in a 2-day window.
+
 ## AML model architecture (locked in)
 
 Verified sound — technically appropriate choices, good use of "not everything

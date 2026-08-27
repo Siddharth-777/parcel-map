@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.core.database import Base
 from app.models.feature import Feature  # noqa: F401
+from app.models.dataset import Dataset  # noqa: F401
 
 # ALEMBIC CONFIGURATION
 config = context.config
