@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   MapContainer,
+  TileLayer,
   Polygon,
   Polyline,
   CircleMarker,
   Popup,
 } from 'react-leaflet';
-import BaseTileLayer from '../components/BaseTileLayer';
 import {
   Check,
   CheckCircle2,
@@ -236,7 +236,6 @@ export default function ApprovalPage({ setCurrentView, showToast, uploadedImage,
 
                 {/* Map Viewport */}
                 <div className="relative flex-1 bg-[#0F172A] h-[550px]">
-<<<<<<< HEAD:src/pages/ApprovalPage.jsx
                   {extractionStatus === 'done' && extractionImage ? (
                     <img
                       src={extractionImage}
@@ -262,16 +261,6 @@ export default function ApprovalPage({ setCurrentView, showToast, uploadedImage,
                           attribution="&copy; OpenStreetMap contributors"
                         />
                       )}
-=======
-                  <MapContainer
-                    center={[12.9721, 77.5961]}
-                    zoom={17}
-                    style={{ height: '100%', width: '100%' }}
-                    zoomControl={false}
-                    className="z-0"
-                  >
-                    <BaseTileLayer layer={approvalMapBaseLayer} />
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/pages/ApprovalPage.jsx
 
                       {/* Render Cadastral Parcels */}
                       {showApprovalParcels &&

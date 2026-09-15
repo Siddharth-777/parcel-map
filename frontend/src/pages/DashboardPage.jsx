@@ -32,11 +32,7 @@ function guessFileType(filename) {
   return 'unspecified';
 }
 
-<<<<<<< HEAD:src/pages/DashboardPage.jsx
 export default function DashboardPage({ setCurrentView, showToast, setUploadedImage, setExtractionStatus, setExtractionImage, setExtractionStats }) {
-=======
-export default function DashboardPage({ setCurrentView, showToast }) {
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/pages/DashboardPage.jsx
   const [backendStatus, setBackendStatus] = useState('checking');
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
@@ -90,9 +86,7 @@ export default function DashboardPage({ setCurrentView, showToast }) {
     }
   };
 
-<<<<<<< HEAD:src/pages/DashboardPage.jsx
   const triggerExtractionPreview = async (file) => {
-    // Runs in the background — does not block navigation to Workspace.
     setExtractionStatus('processing');
     try {
       const formData = new FormData();
@@ -100,7 +94,7 @@ export default function DashboardPage({ setCurrentView, showToast }) {
       const res = await fetch(`${API_URL}/extraction/preview`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`extraction preview failed: ${res.status}`);
       const data = await res.json();
-      setExtractionImage(data.image); // already a data: URL
+      setExtractionImage(data.image);
       setExtractionStats({
         parcelCount: data.parcel_count,
         roadCount: data.road_count,
@@ -113,8 +107,6 @@ export default function DashboardPage({ setCurrentView, showToast }) {
     }
   };
 
-=======
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/pages/DashboardPage.jsx
   const handleUpload = async () => {
     if (!pendingFile) return;
     setUploading(true);
@@ -136,7 +128,6 @@ export default function DashboardPage({ setCurrentView, showToast }) {
 
       const data = await res.json();
       showToast(`Uploaded: ${data.original_filename} (${(data.file_size_bytes / 1024).toFixed(0)} KB)`);
-<<<<<<< HEAD:src/pages/DashboardPage.jsx
       const isImage = /\.(jpg|jpeg|png|tif|tiff)$/i.test(pendingFile.name);
       if (isImage) {
         setUploadedImage(URL.createObjectURL(pendingFile));
@@ -144,8 +135,6 @@ export default function DashboardPage({ setCurrentView, showToast }) {
         setExtractionStats(null);
         triggerExtractionPreview(pendingFile);
       }
-=======
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/pages/DashboardPage.jsx
       setPendingFile(null);
       setCurrentView('workspace');
     } catch (err) {

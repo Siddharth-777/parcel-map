@@ -32,15 +32,12 @@ export default function App() {
   const [showRoadsLayer, setShowRoadsLayer] = useState(true);
   const [showLabelsLayer, setShowLabelsLayer] = useState(true);
   const [mapBaseLayer, setMapBaseLayer] = useState('satellite');
-<<<<<<< HEAD:src/App.jsx
 
   // The user's real uploaded image, and the backend-generated extraction preview
   const [uploadedImage, setUploadedImage] = useState(null);
   const [extractionStatus, setExtractionStatus] = useState('idle'); // 'idle' | 'processing' | 'done' | 'error'
   const [extractionImage, setExtractionImage] = useState(null);
   const [extractionStats, setExtractionStats] = useState(null); // { parcelCount, roadCount, coveragePct }
-=======
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/App.jsx
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -152,11 +149,7 @@ export default function App() {
       {currentView === 'landing' ? (
         <LandingPage setCurrentView={setCurrentView} showToast={showToast} />
       ) : currentView === 'dashboard' ? (
-<<<<<<< HEAD:src/App.jsx
         <DashboardPage setCurrentView={setCurrentView} showToast={showToast} setUploadedImage={setUploadedImage} setExtractionStatus={setExtractionStatus} setExtractionImage={setExtractionImage} setExtractionStats={setExtractionStats} />
-=======
-        <DashboardPage setCurrentView={setCurrentView} showToast={showToast} />
->>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/App.jsx
       ) : currentView === 'workspace' ? (
         <WorkspacePage setCurrentView={setCurrentView} showToast={showToast} uploadedImage={uploadedImage} extractionStatus={extractionStatus} extractionImage={extractionImage} {...layerProps} />
       ) : currentView === 'review' ? (
