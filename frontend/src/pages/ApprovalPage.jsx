@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   MapContainer,
-  TileLayer,
   Polygon,
   Polyline,
   CircleMarker,
   Popup,
 } from 'react-leaflet';
+import BaseTileLayer from '../components/BaseTileLayer';
 import {
   Check,
   CheckCircle2,
@@ -250,17 +250,7 @@ export default function ApprovalPage({ setCurrentView, showToast, uploadedImage,
                       zoomControl={false}
                       className="z-0"
                     >
-                      {approvalMapBaseLayer === 'satellite' ? (
-                        <TileLayer
-                          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                          attribution="&copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, GIS User Community"
-                        />
-                      ) : (
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution="&copy; OpenStreetMap contributors"
-                        />
-                      )}
+                      <BaseTileLayer layer={approvalMapBaseLayer} />
 
                       {/* Render Cadastral Parcels */}
                       {showApprovalParcels &&
