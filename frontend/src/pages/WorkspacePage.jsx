@@ -1,30 +1,20 @@
 import React, { useState } from 'react';
 import {
-  MapContainer,
-  Polygon,
-  Polyline,
-  Popup,
-} from 'react-leaflet';
-import BaseTileLayer from '../components/BaseTileLayer';
-import {
   ArrowRight,
+  AlertTriangle,
   CheckCircle2,
   Clock,
   Database,
   Download,
   FileText,
-  Layers,
-  Map as MapIcon,
   RotateCcw,
-  Ruler,
   Sparkles,
   Table,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { WORKSPACE_PARCELS, WORKSPACE_BUILDINGS, WORKSPACE_ROADS } from '../data/mockData';
 
-export default function WorkspacePage({ setCurrentView, showToast, showParcelsLayer, setShowParcelsLayer, showBuildingsLayer, setShowBuildingsLayer, showRoadsLayer, setShowRoadsLayer, showLabelsLayer, setShowLabelsLayer, mapBaseLayer, setMapBaseLayer }) {
+export default function WorkspacePage({ setCurrentView, showToast, uploadedImage, extractionStatus, extractionImage, showParcelsLayer, setShowParcelsLayer, showBuildingsLayer, setShowBuildingsLayer, showRoadsLayer, setShowRoadsLayer, showLabelsLayer, setShowLabelsLayer, mapBaseLayer, setMapBaseLayer }) {
   const [workspaceZoom, setWorkspaceZoom] = useState(70);
   const [workspacePan, setWorkspacePan] = useState({ x: 0, y: 0 });
   const [isPanningSource, setIsPanningSource] = useState(false);
@@ -201,12 +191,12 @@ export default function WorkspacePage({ setCurrentView, showToast, showParcelsLa
                   }}
                 >
                   <img
-                    src="/indian_satellite_aerial.jpg"
+                    src={uploadedImage || '/indian_satellite_aerial.jpg'}
                     alt="Source Dataset"
                     className="max-w-[650px] w-auto h-auto rounded shadow-2xl block pointer-events-none"
                   />
 
-                  {showParcelsLayer && (
+                  {!uploadedImage && showParcelsLayer && (
                     <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 600">
                       <polygon
                         points="40,160 260,110 330,310 90,360"
@@ -279,166 +269,41 @@ export default function WorkspacePage({ setCurrentView, showToast, showParcelsLa
               </div>
             </div>
 
-            {/* RIGHT PANEL: GIS MAP VIEWER (ArcGIS Layer Controls) */}
+            {/* RIGHT PANEL: AI EXTRACTION PREVIEW (generative overlay from aml/generate.py) */}
             <div className="rounded-2xl border border-[#E2E8F0] bg-white shadow-xs overflow-hidden flex flex-col min-h-[520px]">
-              <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
-                <div className="flex items-center gap-2">
-                  <MapIcon className="w-4 h-4 text-[#0F172A]" />
-                  <h3 className="text-sm font-bold text-[#0F172A]">GIS Map Viewer</h3>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white border border-[#CBD5E1] text-[#475569]">
-                    EPSG:32644 (UTM 44N) · WGS 84
-                  </span>
-                </div>
-
-                {/* ArcGIS-Style Clean Layer Controls */}
-                <div className="flex items-center gap-3.5 text-xs">
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#334155] hover:text-[#0F172A]">
-                    <input
-                      type="checkbox"
-                      checked={showParcelsLayer}
-                      onChange={(e) => setShowParcelsLayer(e.target.checked)}
-                      className="w-3.5 h-3.5 accent-[#0F172A] rounded cursor-pointer"
-                    />
-                    <span className="w-2.5 h-2.5 rounded-xs bg-[#10B981] inline-block"></span>
-                    <span>Parcels</span>
-                  </label>
-
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#334155] hover:text-[#0F172A]">
-                    <input
-                      type="checkbox"
-                      checked={showBuildingsLayer}
-                      onChange={(e) => setShowBuildingsLayer(e.target.checked)}
-                      className="w-3.5 h-3.5 accent-[#0F172A] rounded cursor-pointer"
-                    />
-                    <span className="w-2.5 h-2.5 rounded-xs bg-[#EF4444] inline-block"></span>
-                    <span>Buildings</span>
-                  </label>
-
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-[#334155] hover:text-[#0F172A]">
-                    <input
-                      type="checkbox"
-                      checked={showRoadsLayer}
-                      onChange={(e) => setShowRoadsLayer(e.target.checked)}
-                      className="w-3.5 h-3.5 accent-[#0F172A] rounded cursor-pointer"
-                    />
-                    <span className="w-2.5 h-2.5 rounded-xs bg-[#F59E0B] inline-block"></span>
-                    <span>Roads</span>
-                  </label>
-                </div>
+              <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center gap-2 bg-[#F8FAFC]">
+                <Sparkles className="w-4 h-4 text-[#0F172A]" />
+                <h3 className="text-sm font-bold text-[#0F172A]">AI Preview (Generative)</h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white border border-[#CBD5E1] text-[#475569]">
+                  Generative overlay preview
+                </span>
               </div>
 
-              <div className="relative flex-1 w-full h-full min-h-[460px] bg-[#E2E8F0]">
-                <MapContainer
-                  center={[12.9721, 77.5961]}
-                  zoom={16}
-                  scrollWheelZoom={true}
-                  className="w-full h-full min-h-[460px]"
-                  attributionControl={false}
-                >
-                  <BaseTileLayer layer={mapBaseLayer} />
-
-                  {showParcelsLayer &&
-                    WORKSPACE_PARCELS.map((p) => (
-                      <Polygon
-                        key={p.id}
-                        positions={p.coords}
-                        pathOptions={{
-                          color: p.color,
-                          fillColor: p.color,
-                          fillOpacity: 0.35,
-                          weight: 2.5,
-                        }}
-                      >
-                        <Popup>
-                          <div className="p-1 text-xs">
-                            <p className="font-bold text-[#0F172A]">{p.name}</p>
-                            <p className="text-gray-500 font-mono">ID: {p.id}</p>
-                            <p className="text-gray-500">Type: {p.type}</p>
-                            <p className="text-emerald-600 font-semibold">Area: {p.area}</p>
-                          </div>
-                        </Popup>
-                      </Polygon>
-                    ))}
-
-                  {showBuildingsLayer &&
-                    WORKSPACE_BUILDINGS.map((b) => (
-                      <Polygon
-                        key={b.id}
-                        positions={b.coords}
-                        pathOptions={{
-                          color: b.color,
-                          fillColor: b.color,
-                          fillOpacity: 0.5,
-                          weight: 2,
-                        }}
-                      >
-                        <Popup>
-                          <div className="p-1 text-xs font-bold text-[#0F172A]">
-                            {b.name} ({b.id})
-                          </div>
-                        </Popup>
-                      </Polygon>
-                    ))}
-
-                  {showRoadsLayer &&
-                    WORKSPACE_ROADS.map((r) => (
-                      <Polyline
-                        key={r.id}
-                        positions={r.coords}
-                        pathOptions={{
-                          color: r.color,
-                          weight: 4,
-                          dashArray: '6, 6',
-                        }}
-                      >
-                        <Popup>
-                          <div className="p-1 text-xs font-bold text-[#0F172A]">
-                            {r.name}
-                          </div>
-                        </Popup>
-                      </Polyline>
-                    ))}
-                </MapContainer>
-
-                {/* Floating Map Controls */}
-                <div className="absolute top-4 left-4 z-400 flex flex-col bg-white/95 backdrop-blur-md rounded-xl border border-[#CBD5E1] p-1 text-[#0F172A] shadow-lg">
-                  <button
-                    onClick={() =>
-                      setMapBaseLayer(mapBaseLayer === 'osm' ? 'satellite' : 'osm')
-                    }
-                    title="Switch Basemap (Street / Satellite)"
-                    className="p-2 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Layers className="w-4 h-4" />
-                  </button>
-                  <button
-                    disabled
-                    title="Measure Distance & Area (coming soon)"
-                    className="p-2 rounded-lg text-[#94A3B8] opacity-50 cursor-not-allowed"
-                  >
-                    <Ruler className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowParcelsLayer(true);
-                      setShowBuildingsLayer(true);
-                      setShowRoadsLayer(true);
-                      showToast('Reset all GIS layers');
-                    }}
-                    title="Reset View"
-                    className="p-2 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="absolute bottom-4 right-4 z-400 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#CBD5E1] font-mono text-[11px] text-[#0F172A] shadow-md flex items-center gap-3">
-                  <span>12.9721°N, 77.5961°E</span>
-                  <span className="text-[#CBD5E1]">|</span>
-                  <span>1:2,000</span>
-                  <span className="text-[#CBD5E1]">|</span>
-                  <span className="font-bold">EPSG:32644</span>
-                </div>
+              <div className="relative flex-1 w-full h-full min-h-[460px] bg-slate-900 flex items-center justify-center">
+                {extractionStatus === 'processing' ? (
+                  <div className="text-center text-white/70 p-8">
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+                    <p className="font-bold mb-1">Processing...</p>
+                    <p className="text-xs">Generating the AI preview overlay.</p>
+                  </div>
+                ) : extractionStatus === 'error' ? (
+                  <div className="text-center text-white/70 p-8">
+                    <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                    <p className="font-bold mb-1">Preview generation failed</p>
+                    <p className="text-xs">Check the backend is running and try uploading again.</p>
+                  </div>
+                ) : extractionStatus === 'done' && extractionImage ? (
+                  <img
+                    src={extractionImage}
+                    alt="AI-generated cadastral overlay preview"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-center text-white/50 text-sm p-8">
+                    <p className="font-bold mb-1">No preview yet</p>
+                    <p className="text-xs">Upload a dataset from the Dashboard to generate an AI preview.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

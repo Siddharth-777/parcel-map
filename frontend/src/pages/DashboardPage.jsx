@@ -32,7 +32,7 @@ function guessFileType(filename) {
   return 'unspecified';
 }
 
-export default function DashboardPage({ setCurrentView, showToast }) {
+export default function DashboardPage({ setCurrentView, showToast, setUploadedImage, setExtractionStatus, setExtractionImage, setExtractionStats }) {
   const [backendStatus, setBackendStatus] = useState('checking');
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
@@ -86,6 +86,28 @@ export default function DashboardPage({ setCurrentView, showToast }) {
     }
   };
 
+  const triggerExtractionPreview = async (file) => {
+    // Runs in the background — does not block navigation to Workspace.
+    setExtractionStatus('processing');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/extraction/preview`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`extraction preview failed: ${res.status}`);
+      const data = await res.json();
+      setExtractionImage(data.image); // already a data: URL
+      setExtractionStats({
+        parcelCount: data.parcel_count,
+        roadCount: data.road_count,
+        coveragePct: data.overlay_coverage_pct,
+      });
+      setExtractionStatus('done');
+    } catch (err) {
+      console.error('extraction preview error:', err);
+      setExtractionStatus('error');
+    }
+  };
+
   const handleUpload = async () => {
     if (!pendingFile) return;
     setUploading(true);
@@ -107,6 +129,13 @@ export default function DashboardPage({ setCurrentView, showToast }) {
 
       const data = await res.json();
       showToast(`Uploaded: ${data.original_filename} (${(data.file_size_bytes / 1024).toFixed(0)} KB)`);
+      const isImage = /\.(jpg|jpeg|png|tif|tiff)$/i.test(pendingFile.name);
+      if (isImage) {
+        setUploadedImage(URL.createObjectURL(pendingFile));
+        setExtractionImage(null);
+        setExtractionStats(null);
+        triggerExtractionPreview(pendingFile);
+      }
       setPendingFile(null);
       setCurrentView('workspace');
     } catch (err) {

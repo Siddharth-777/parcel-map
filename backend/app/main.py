@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routers import health, parcels, buildings, roads, landuse, inference, export, datasets
+from app.routers import health, parcels, buildings, roads, landuse, inference, export, datasets, extraction_preview
 
 # APPLICATION LIFESPAN
 @asynccontextmanager
@@ -41,3 +41,5 @@ app.include_router(landuse.router)
 app.include_router(inference.router)
 app.include_router(export.router)
 app.include_router(datasets.router)
+
+app.include_router(extraction_preview.router)

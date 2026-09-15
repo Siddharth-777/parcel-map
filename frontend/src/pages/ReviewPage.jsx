@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { WORKSPACE_PARCELS, WORKSPACE_BUILDINGS, WORKSPACE_ROADS, INITIAL_REVIEW_QUEUE } from '../data/mockData';
 
-export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer, setShowParcelsLayer, showBuildingsLayer, setShowBuildingsLayer, showRoadsLayer, setShowRoadsLayer, showLabelsLayer, setShowLabelsLayer, mapBaseLayer, setMapBaseLayer }) {
+export default function ReviewPage({ setCurrentView, showToast, uploadedImage, extractionStatus, extractionImage, extractionStats, showParcelsLayer, setShowParcelsLayer, showBuildingsLayer, setShowBuildingsLayer, showRoadsLayer, setShowRoadsLayer, showLabelsLayer, setShowLabelsLayer, mapBaseLayer, setMapBaseLayer }) {
   const [reviewZoom, setReviewZoom] = useState(75);
   const [reviewPan, setReviewPan] = useState({ x: 0, y: 0 });
   const [isPanningReview, setIsPanningReview] = useState(false);
@@ -245,7 +245,7 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                       }}
                     >
                       <img
-                        src="/indian_satellite_aerial.jpg"
+                        src={uploadedImage || '/indian_satellite_aerial.jpg'}
                         alt="Source Drone Imagery"
                         className="max-w-[650px] w-auto h-auto rounded shadow-2xl block pointer-events-none"
                       />
@@ -293,19 +293,23 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                   <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#0F172A]" />
-                      <h3 className="text-sm font-bold text-[#0F172A]">AI Extraction Results</h3>
+                      <h3 className="text-sm font-bold text-[#0F172A]">
+                        {extractionStatus === 'idle' ? 'AI Extraction Results' : 'AI Preview (Generative)'}
+                      </h3>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-[#CBD5E1] text-[#475569]">
-                        Vector Cadastre (GeoJSON / PostGIS)
+                        {extractionStatus === 'idle' ? 'Vector Cadastre (GeoJSON / PostGIS)' : 'Generative overlay preview'}
                       </span>
                     </div>
 
-                    {/* Layer Controls Checkboxes */}
-                    <div className="flex items-center gap-3 text-xs">
+                    {/* Layer Controls Checkboxes — only meaningful in demo/idle mode; the real
+                        generative preview is a single merged image with nothing to toggle. */}
+                    <div className={`flex items-center gap-3 text-xs ${extractionStatus !== 'idle' ? 'opacity-40' : ''}`} title={extractionStatus !== 'idle' ? 'Not available for the AI-generated preview' : undefined}>
                       <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-[#475569]">
                         <input
                           type="checkbox"
                           checked={showParcelsLayer}
                           onChange={(e) => setShowParcelsLayer(e.target.checked)}
+                          disabled={extractionStatus !== 'idle'}
                           className="w-3.5 h-3.5 accent-[#0F172A] rounded"
                         />
                         <span>Parcels</span>
@@ -316,6 +320,7 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                           type="checkbox"
                           checked={showBuildingsLayer}
                           onChange={(e) => setShowBuildingsLayer(e.target.checked)}
+                          disabled={extractionStatus !== 'idle'}
                           className="w-3.5 h-3.5 accent-[#0F172A] rounded"
                         />
                         <span>Buildings</span>
@@ -326,6 +331,7 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                           type="checkbox"
                           checked={showRoadsLayer}
                           onChange={(e) => setShowRoadsLayer(e.target.checked)}
+                          disabled={extractionStatus !== 'idle'}
                           className="w-3.5 h-3.5 accent-[#0F172A] rounded"
                         />
                         <span>Roads</span>
@@ -336,6 +342,7 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                           type="checkbox"
                           checked={showLabelsLayer}
                           onChange={(e) => setShowLabelsLayer(e.target.checked)}
+                          disabled={extractionStatus !== 'idle'}
                           className="w-3.5 h-3.5 accent-[#0F172A] rounded"
                         />
                         <span>Labels</span>
@@ -344,77 +351,101 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                   </div>
 
                   <div className="relative flex-1 w-full h-full min-h-[440px] bg-[#E2E8F0]">
-                    <MapContainer
-                      center={[12.9721, 77.5961]}
-                      zoom={16}
-                      scrollWheelZoom={true}
-                      className="w-full h-full min-h-[440px]"
-                      attributionControl={false}
-                    >
-                      <BaseTileLayer layer={mapBaseLayer} />
+                    {extractionStatus === 'idle' ? (
+                      <MapContainer
+                        center={[12.9721, 77.5961]}
+                        zoom={16}
+                        scrollWheelZoom={true}
+                        className="w-full h-full min-h-[440px]"
+                        attributionControl={false}
+                      >
+                        <BaseTileLayer layer={mapBaseLayer} />
 
-                      {showParcelsLayer &&
-                        WORKSPACE_PARCELS.map((p) => (
-                          <Polygon
-                            key={p.id}
-                            positions={p.coords}
-                            pathOptions={{
-                              color: p.color,
-                              fillColor: p.color,
-                              fillOpacity: 0.38,
-                              weight: 2.5,
-                            }}
-                          >
-                            <Popup>
-                              <div className="p-1.5 text-xs">
-                                <p className="font-bold text-[#0F172A] text-sm">{p.name}</p>
-                                <p className="text-gray-500 font-mono">ID: {p.id}</p>
-                                <p className="text-gray-500">Classification: {p.type}</p>
-                                <p className="text-emerald-600 font-bold mt-1">Area: {p.area}</p>
-                              </div>
-                            </Popup>
-                          </Polygon>
-                        ))}
+                        {showParcelsLayer &&
+                          WORKSPACE_PARCELS.map((p) => (
+                            <Polygon
+                              key={p.id}
+                              positions={p.coords}
+                              pathOptions={{
+                                color: p.color,
+                                fillColor: p.color,
+                                fillOpacity: 0.38,
+                                weight: 2.5,
+                              }}
+                            >
+                              <Popup>
+                                <div className="p-1.5 text-xs">
+                                  <p className="font-bold text-[#0F172A] text-sm">{p.name}</p>
+                                  <p className="text-gray-500 font-mono">ID: {p.id}</p>
+                                  <p className="text-gray-500">Classification: {p.type}</p>
+                                  <p className="text-emerald-600 font-bold mt-1">Area: {p.area}</p>
+                                </div>
+                              </Popup>
+                            </Polygon>
+                          ))}
 
-                      {showBuildingsLayer &&
-                        WORKSPACE_BUILDINGS.map((b) => (
-                          <Polygon
-                            key={b.id}
-                            positions={b.coords}
-                            pathOptions={{
-                              color: b.color,
-                              fillColor: b.color,
-                              fillOpacity: 0.55,
-                              weight: 2,
-                            }}
-                          >
-                            <Popup>
-                              <div className="p-1.5 text-xs font-bold text-[#0F172A]">
-                                {b.name} ({b.id})
-                              </div>
-                            </Popup>
-                          </Polygon>
-                        ))}
+                        {showBuildingsLayer &&
+                          WORKSPACE_BUILDINGS.map((b) => (
+                            <Polygon
+                              key={b.id}
+                              positions={b.coords}
+                              pathOptions={{
+                                color: b.color,
+                                fillColor: b.color,
+                                fillOpacity: 0.55,
+                                weight: 2,
+                              }}
+                            >
+                              <Popup>
+                                <div className="p-1.5 text-xs font-bold text-[#0F172A]">
+                                  {b.name} ({b.id})
+                                </div>
+                              </Popup>
+                            </Polygon>
+                          ))}
 
-                      {showRoadsLayer &&
-                        WORKSPACE_ROADS.map((r) => (
-                          <Polyline
-                            key={r.id}
-                            positions={r.coords}
-                            pathOptions={{
-                              color: r.color,
-                              weight: 4,
-                              dashArray: '6, 6',
-                            }}
-                          >
-                            <Popup>
-                              <div className="p-1.5 text-xs font-bold text-[#0F172A]">
-                                {r.name}
-                              </div>
-                            </Popup>
-                          </Polyline>
-                        ))}
-                    </MapContainer>
+                        {showRoadsLayer &&
+                          WORKSPACE_ROADS.map((r) => (
+                            <Polyline
+                              key={r.id}
+                              positions={r.coords}
+                              pathOptions={{
+                                color: r.color,
+                                weight: 4,
+                                dashArray: '6, 6',
+                              }}
+                            >
+                              <Popup>
+                                <div className="p-1.5 text-xs font-bold text-[#0F172A]">
+                                  {r.name}
+                                </div>
+                              </Popup>
+                            </Polyline>
+                          ))}
+                      </MapContainer>
+                    ) : extractionStatus === 'processing' ? (
+                      <div className="w-full h-full min-h-[440px] flex items-center justify-center bg-slate-900 text-white/70">
+                        <div className="text-center">
+                          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
+                          <p className="font-bold mb-1">Processing...</p>
+                          <p className="text-xs">Generating the AI preview overlay.</p>
+                        </div>
+                      </div>
+                    ) : extractionStatus === 'error' ? (
+                      <div className="w-full h-full min-h-[440px] flex items-center justify-center bg-slate-900 text-white/70">
+                        <div className="text-center">
+                          <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                          <p className="font-bold mb-1">Preview generation failed</p>
+                          <p className="text-xs">Check the backend is running and try uploading again.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={extractionImage}
+                        alt="AI-generated cadastral overlay preview"
+                        className="w-full h-full object-contain bg-slate-900"
+                      />
+                    )}
 
                     {/* Floating Map Controls */}
                     <div className="absolute top-4 left-4 z-400 flex flex-col bg-white/95 backdrop-blur-md rounded-xl border border-[#CBD5E1] p-1 text-[#0F172A] shadow-lg">
@@ -460,168 +491,267 @@ export default function ReviewPage({ setCurrentView, showToast, showParcelsLayer
                 </div>
               </div>
 
-              {/* AI STATISTICS SECTION (4 KPI CARDS) */}
+              {/* AI STATISTICS SECTION (KPI CARDS) */}
               <div className="mb-8">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-3">
                   AI EXTRACTION KEY PERFORMANCE INDICATORS
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-[#64748B] uppercase">
-                          Detected Buildings
+                {extractionStatus === 'idle' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#64748B] uppercase">
+                            Detected Buildings
+                          </span>
+                          <Building className="w-4 h-4 text-[#0F172A]" />
+                        </div>
+                        <span className="text-3xl sm:text-4xl font-black text-[#0F172A] font-mono block">
+                          7
                         </span>
-                        <Building className="w-4 h-4 text-[#0F172A]" />
                       </div>
-                      <span className="text-3xl sm:text-4xl font-black text-[#0F172A] font-mono block">
-                        38
+                      <span className="text-[11px] text-[#64748B] mt-3">
+                        DSM-rectified footprints & rooflines
                       </span>
-                    </div>
-                    <span className="text-[11px] text-[#64748B] mt-3">
-                      DSM-rectified footprints & rooflines
-                    </span>
-                  </motion.div>
+                    </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.05 }}
-                    className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-[#64748B] uppercase">
-                          Detected Parcels
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.05 }}
+                      className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#64748B] uppercase">
+                            Detected Parcels
+                          </span>
+                          <Layers className="w-4 h-4 text-[#10B981]" />
+                        </div>
+                        <span className="text-3xl sm:text-4xl font-black text-[#10B981] font-mono block">
+                          16
                         </span>
-                        <Layers className="w-4 h-4 text-[#10B981]" />
                       </div>
-                      <span className="text-3xl sm:text-4xl font-black text-[#10B981] font-mono block">
-                        16
+                      <span className="text-[11px] text-[#64748B] mt-3">
+                        Closed cadastral boundary plots
                       </span>
-                    </div>
-                    <span className="text-[11px] text-[#64748B] mt-3">
-                      Closed cadastral boundary plots
-                    </span>
-                  </motion.div>
+                    </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                    className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-[#64748B] uppercase">
-                          Detected Roads
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                      className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#64748B] uppercase">
+                            Detected Roads
+                          </span>
+                          <Navigation className="w-4 h-4 text-[#F59E0B]" />
+                        </div>
+                        <span className="text-3xl sm:text-4xl font-black text-[#F59E0B] font-mono block">
+                          4.2 km
                         </span>
-                        <Navigation className="w-4 h-4 text-[#F59E0B]" />
                       </div>
-                      <span className="text-3xl sm:text-4xl font-black text-[#F59E0B] font-mono block">
-                        4.2 km
+                      <span className="text-[11px] text-[#64748B] mt-3">
+                        Topological road & lane centerlines
                       </span>
-                    </div>
-                    <span className="text-[11px] text-[#64748B] mt-3">
-                      Topological road & lane centerlines
-                    </span>
-                  </motion.div>
+                    </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.15 }}
-                    className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-[#64748B] uppercase">
-                          Confidence Score
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.15 }}
+                      className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#64748B] uppercase">
+                            Confidence Score
+                          </span>
+                          <Sparkles className="w-4 h-4 text-[#4338CA]" />
+                        </div>
+                        <span className="text-3xl sm:text-4xl font-black text-[#4338CA] font-mono block">
+                          98.6%
                         </span>
-                        <Sparkles className="w-4 h-4 text-[#4338CA]" />
                       </div>
-                      <span className="text-3xl sm:text-4xl font-black text-[#4338CA] font-mono block">
-                        98.6%
+                      <span className="text-[11px] text-[#64748B] mt-3">
+                        Ready for MAP-2 Ground Truthing
                       </span>
+                    </motion.div>
+                  </div>
+                ) : extractionStatus === 'done' && extractionStats ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-[#64748B] uppercase">
+                              Parcels Identified
+                            </span>
+                            <Layers className="w-4 h-4 text-[#10B981]" />
+                          </div>
+                          <span className="text-3xl sm:text-4xl font-black text-[#10B981] font-mono block">
+                            {extractionStats.parcelCount ?? '—'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#64748B] mt-3">
+                          Estimated from AI-drawn regions in this preview
+                        </span>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.05 }}
+                        className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-[#64748B] uppercase">
+                              Road Segments
+                            </span>
+                            <Navigation className="w-4 h-4 text-[#F59E0B]" />
+                          </div>
+                          <span className="text-3xl sm:text-4xl font-black text-[#F59E0B] font-mono block">
+                            {extractionStats.roadCount ?? '—'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#64748B] mt-3">
+                          Estimated from AI-drawn regions in this preview
+                        </span>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                        className="p-6 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-[#64748B] uppercase">
+                              Overlay Coverage
+                            </span>
+                            <Sparkles className="w-4 h-4 text-[#4338CA]" />
+                          </div>
+                          <span className="text-3xl sm:text-4xl font-black text-[#4338CA] font-mono block">
+                            {extractionStats.coveragePct != null ? `${extractionStats.coveragePct}%` : '—'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#64748B] mt-3">
+                          Share of the image marked as a detected feature
+                        </span>
+                      </motion.div>
                     </div>
-                    <span className="text-[11px] text-[#64748B] mt-3">
-                      Ready for MAP-2 Ground Truthing
-                    </span>
-                  </motion.div>
-                </div>
+                    <p className="text-[11px] text-[#94A3B8] mt-3">
+                      These are best-effort visual estimates from the AI-generated preview image, not a calibrated
+                      measurement — real, geometry-based counts require the trained detection model.
+                    </p>
+                  </>
+                ) : (
+                  <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm text-[#64748B]">
+                    {extractionStatus === 'processing' ? 'Waiting for the AI preview to finish generating…' : 'Upload a dataset to see extraction statistics.'}
+                  </div>
+                )}
               </div>
 
               {/* QUALITY VALIDATION SECTION */}
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-xs mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-[#0F172A]">
-                      Topology & Quality Validation
-                    </h3>
-                    <p className="text-xs text-[#64748B]">
-                      Automated topological integrity verification ensuring legal cadastral compliance.
-                    </p>
+              {extractionStatus === 'idle' ? (
+                <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-xs mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-[#0F172A]">
+                        Topology & Quality Validation
+                      </h3>
+                      <p className="text-xs text-[#64748B]">
+                        Automated topological integrity verification ensuring legal cadastral compliance.
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-xs font-bold text-[#065F46]">
+                      Quality Index: 99.1%
+                    </span>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-xs font-bold text-[#065F46]">
-                    Quality Index: 99.1%
-                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-[#0F172A] mb-0.5">
+                          Parcel Topology Passed
+                        </p>
+                        <p className="text-[11px] text-[#64748B]">
+                          0 gaps, 0 sliver polygons, properly shared nodes
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-[#0F172A] mb-0.5">
+                          Building Overlap Passed
+                        </p>
+                        <p className="text-[11px] text-[#64748B]">
+                          DSM elevation roofline overhangs rectified
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-[#0F172A] mb-0.5">
+                          Road Continuity Passed
+                        </p>
+                        <p className="text-[11px] text-[#64748B]">
+                          Topological connectivity and endpoint snapping verified
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-[#92400E] mb-0.5">
+                          Manual Review Flagged
+                        </p>
+                        <p className="text-[11px] text-[#B45309]">
+                          3 boundary segments recommended for GT inspection
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                  <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
+              ) : extractionStatus === 'done' ? (
+                <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-xs mb-8">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-[#94A3B8] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-bold text-[#0F172A] mb-0.5">
-                        Parcel Topology Passed
-                      </p>
-                      <p className="text-[11px] text-[#64748B]">
-                        0 gaps, 0 sliver polygons, properly shared nodes
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-[#0F172A] mb-0.5">
-                        Building Overlap Passed
-                      </p>
-                      <p className="text-[11px] text-[#64748B]">
-                        DSM elevation roofline overhangs rectified
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-[#0F172A] mb-0.5">
-                        Road Continuity Passed
-                      </p>
-                      <p className="text-[11px] text-[#64748B]">
-                        Topological connectivity and endpoint snapping verified
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-[#92400E] mb-0.5">
-                        Manual Review Flagged
-                      </p>
-                      <p className="text-[11px] text-[#B45309]">
-                        3 boundary segments recommended for GT inspection
+                      <h3 className="text-base font-bold text-[#0F172A] mb-1">
+                        Topology & Quality Validation — not available for this preview
+                      </h3>
+                      <p className="text-xs text-[#64748B]">
+                        Gap, overlap, and connectivity checks require real vector geometry (actual polygon
+                        coordinates). The AI preview above is a generated image with colors drawn on top of the
+                        photo — it doesn't produce the underlying geometry needed for these checks. Real topology
+                        validation requires the trained detection model's vectorized output.
                       </p>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
 
               {/* MANUAL REVIEW QUEUE SECTION */}
               <div className="rounded-2xl border border-[#E2E8F0] bg-white shadow-xs mb-8 overflow-hidden">

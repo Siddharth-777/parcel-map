@@ -49,4 +49,5 @@ aml
 
 frontend/.env
 
-public/indian_cadastral_map.jpg
+frontend/public/indian_cadastral_map.jpg
+backend/uploads

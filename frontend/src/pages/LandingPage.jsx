@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -12,15 +12,40 @@ import {
   Building,
   Navigation,
   Database,
-  Check,
 } from 'lucide-react';
 
-export default function LandingPage({ setCurrentView, showToast }) {
-  const [heroSheetOpacity, setHeroSheetOpacity] = useState(80);
-  const [heroActiveSheet, setHeroActiveSheet] = useState('ORI-01');
-  const [perspectiveStep, setPerspectiveStep] = useState(2);
-  const [vectorElevation, setVectorElevation] = useState(45);
+export default function LandingPage({ setCurrentView }) {
+  const [heroSheetOpacity, setHeroSheetOpacity] = useState(50);
+  const [perspectiveStep, setPerspectiveStep] = useState(0);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState(2);
+
+  const containerRef = useRef(null);
+  const isDragging = useRef(false);
+
+  const updateSplit = useCallback((e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setHeroSheetOpacity(percent);
+  }, []);
+
+  const handlePointerDown = useCallback((e) => {
+    e.preventDefault();
+    isDragging.current = true;
+    containerRef.current?.setPointerCapture(e.pointerId);
+    updateSplit(e);
+  }, [updateSplit]);
+
+  const handlePointerMove = useCallback((e) => {
+    if (!isDragging.current) return;
+    updateSplit(e);
+  }, [updateSplit]);
+
+  const handlePointerUp = useCallback((e) => {
+    isDragging.current = false;
+    containerRef.current?.releasePointerCapture(e.pointerId);
+  }, []);
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
@@ -102,11 +127,18 @@ export default function LandingPage({ setCurrentView, showToast }) {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="lg:col-span-6 relative flex flex-col items-center"
           >
-            <div className="relative w-full max-w-[620px] aspect-[4/3] rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-xl bg-slate-950 select-none">
-              {/* BASE LAYER: Original Drone Survey Photo (Full Size) */}
+            <div
+              ref={containerRef}
+              className="relative w-full max-w-[620px] aspect-[4/3] rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-xl bg-slate-950 select-none cursor-ew-resize touch-none"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+            >
+              {/* BASE LAYER: Layer 1 — Ground (Drone Imagery) */}
               <img
-                src="/indian_satellite_aerial.jpg"
-                alt="Original Drone Survey Imagery"
+                src="/layer-ground.jpg"
+                alt="Layer 1 — Ground (Original Drone Imagery)"
                 className="absolute inset-0 w-full h-full object-cover"
               />
 
@@ -116,137 +148,16 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 <span>ORIGINAL DRONE IMAGERY (0.05m GSD)</span>
               </div>
 
-              {/* RIGHT LAYER: EXACT SAME Drone Photo with OVERLAID CADASTRAL VECTOR EXTRACTION */}
+              {/* RIGHT LAYER: Layer 4 — Cadastral (AI Output) */}
               <div
                 className="absolute inset-0 overflow-hidden"
                 style={{ clipPath: `inset(0 0 0 ${heroSheetOpacity}%)` }}
               >
-                {/* Identical background image */}
                 <img
-                  src="/indian_satellite_aerial.jpg"
-                  alt="AI Cadastral Output on Same Drone Image"
-                  className="absolute inset-0 w-full h-full object-cover brightness-[0.92]"
+                  src="/layer-cadastral.jpg"
+                  alt="Layer 4 — AI Digital Cadastral Map"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-
-                {/* Vector Cadastral Geometry Overlays aligned precisely with the drone features */}
-                <div className="absolute inset-0 w-full h-full">
-                  <svg
-                    className="w-full h-full"
-                    viewBox="0 0 800 600"
-                    preserveAspectRatio="none"
-                  >
-                    {/* Sy No. 101 - Agricultural Survey Parcel */}
-                    <polygon
-                      points="40,160 260,110 330,310 90,360"
-                      fill="#10B981"
-                      fillOpacity="0.28"
-                      stroke="#10B981"
-                      strokeWidth="3.5"
-                    />
-                    {/* Sy No. 102 - Settlement Parcel */}
-                    <polygon
-                      points="265,108 520,60 560,260 335,308"
-                      fill="#3B82F6"
-                      fillOpacity="0.28"
-                      stroke="#3B82F6"
-                      strokeWidth="3.5"
-                    />
-                    {/* Sy No. 103 - Commercial / Roadside Plot */}
-                    <polygon
-                      points="525,58 760,100 780,310 565,258"
-                      fill="#8B5CF6"
-                      fillOpacity="0.28"
-                      stroke="#8B5CF6"
-                      strokeWidth="3.5"
-                    />
-                    {/* Sy No. 104 - Southern Agricultural Plot */}
-                    <polygon
-                      points="95,365 340,315 375,540 130,570"
-                      fill="#EC4899"
-                      fillOpacity="0.28"
-                      stroke="#EC4899"
-                      strokeWidth="3.5"
-                    />
-                    {/* Sy No. 105 - Abadi Parcel */}
-                    <polygon
-                      points="345,313 570,263 605,510 380,538"
-                      fill="#14B8A6"
-                      fillOpacity="0.28"
-                      stroke="#14B8A6"
-                      strokeWidth="3.5"
-                    />
-                    {/* Sy No. 106 - Canal / Public Boundary */}
-                    <polygon
-                      points="575,261 775,312 790,520 610,508"
-                      fill="#6366F1"
-                      fillOpacity="0.28"
-                      stroke="#6366F1"
-                      strokeWidth="3.5"
-                    />
-
-                    {/* Extracted Building Footprints (Conforming to Rooflines) */}
-                    <polygon
-                      points="380,140 440,125 455,190 395,205"
-                      fill="#EF4444"
-                      fillOpacity="0.6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                    <polygon
-                      points="460,135 500,125 510,175 470,185"
-                      fill="#EF4444"
-                      fillOpacity="0.6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                    <polygon
-                      points="410,340 470,325 485,395 425,410"
-                      fill="#F97316"
-                      fillOpacity="0.6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                    <polygon
-                      points="495,340 545,330 555,385 505,395"
-                      fill="#F97316"
-                      fillOpacity="0.6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-
-                    {/* Extracted Village Road Centerline Corridor */}
-                    <polyline
-                      points="0,320 330,305 565,255 800,285"
-                      fill="none"
-                      stroke="#F59E0B"
-                      strokeWidth="6"
-                      strokeDasharray="10 6"
-                    />
-                  </svg>
-
-                  {/* Parcel ID Annotation Badges */}
-                  <div className="absolute top-[28%] left-[20%] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-2 py-0.5 rounded shadow-md border border-emerald-500 text-[10px] font-mono font-bold text-emerald-800">
-                    Sy No. 101 (2,450 m²)
-                  </div>
-                  <div className="absolute top-[22%] left-[54%] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-2 py-0.5 rounded shadow-md border border-blue-500 text-[10px] font-mono font-bold text-blue-800">
-                    Sy No. 102 (1,890 m²)
-                  </div>
-                  <div className="absolute top-[24%] left-[82%] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-2 py-0.5 rounded shadow-md border border-purple-500 text-[10px] font-mono font-bold text-purple-800">
-                    Sy No. 103 (3,120 m²)
-                  </div>
-                  <div className="absolute top-[68%] left-[28%] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-2 py-0.5 rounded shadow-md border border-pink-500 text-[10px] font-mono font-bold text-pink-800">
-                    Sy No. 104 (1,740 m²)
-                  </div>
-                  <div className="absolute top-[65%] left-[62%] -translate-x-1/2 -translate-y-1/2 bg-white/95 px-2 py-0.5 rounded shadow-md border border-teal-500 text-[10px] font-mono font-bold text-teal-800">
-                    Sy No. 105 (Abadi)
-                  </div>
-
-                  {/* Boundary Stone GCP Marker */}
-                  <div className="absolute top-[51%] left-[42%] -translate-x-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-[#0F172A] text-white px-2 py-0.5 rounded-full shadow-lg border border-white/40 text-[9px] font-mono font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span>सी.मा. / BS-04 (GCP Lock)</span>
-                  </div>
-                </div>
 
                 {/* RIGHT LABEL: AI Digital Cadastral Map */}
                 <div className="absolute top-4 right-4 z-10 bg-black/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-emerald-400 text-[11px] font-mono font-bold text-emerald-400 shadow-md flex items-center gap-2">
@@ -255,53 +166,19 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 </div>
               </div>
 
-              {/* Scrub Divider Line */}
+              {/* Vertical Divider Line */}
               <div
-                className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)] z-20 pointer-events-none"
+                className="absolute top-0 bottom-0 w-0.5 bg-white/90 shadow-[0_0_8px_rgba(255,255,255,0.6)] z-20 pointer-events-none"
                 style={{ left: `${heroSheetOpacity}%` }}
               >
-                <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#0F172A] text-white border-2 border-white shadow-xl flex items-center justify-center text-xs font-bold">
+                <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-[#0F172A] border-2 border-white shadow-lg flex items-center justify-center text-[10px] text-white font-bold">
                   ⇄
                 </div>
               </div>
 
-              {/* Preset Comparison Buttons in Top Right Overlay */}
-              <div className="absolute bottom-16 right-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-[#CBD5E1] shadow-lg">
-                <button
-                  onClick={() => setHeroSheetOpacity(100)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                    heroSheetOpacity === 100
-                      ? 'bg-[#0F172A] text-white shadow-xs'
-                      : 'text-[#475569] hover:bg-[#F1F5F9]'
-                  }`}
-                >
-                  Raw Drone
-                </button>
-                <button
-                  onClick={() => setHeroSheetOpacity(50)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                    heroSheetOpacity === 50
-                      ? 'bg-[#0F172A] text-white shadow-xs'
-                      : 'text-[#475569] hover:bg-[#F1F5F9]'
-                  }`}
-                >
-                  50/50 Split
-                </button>
-                <button
-                  onClick={() => setHeroSheetOpacity(0)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                    heroSheetOpacity === 0
-                      ? 'bg-[#0F172A] text-white shadow-xs'
-                      : 'text-[#475569] hover:bg-[#F1F5F9]'
-                  }`}
-                >
-                  Cadastre Map
-                </button>
-              </div>
-
-              {/* Bottom Control Bar with Split Slider */}
-              <div className="absolute bottom-4 left-4 right-4 z-20 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-xl border border-[#CBD5E1] shadow-lg flex items-center justify-between gap-4">
-                <span className="text-[11px] font-mono font-bold text-[#475569] uppercase tracking-wider shrink-0">
+              {/* Bottom Slider Control */}
+              <div className="absolute bottom-0 left-0 right-0 z-30 bg-[#0F172A]/90 backdrop-blur-md px-4 py-2 flex items-center gap-3 pointer-events-auto">
+                <span className="text-[10px] font-mono font-bold text-white/80 uppercase tracking-wider shrink-0">
                   RAW DRONE
                 </span>
                 <input
@@ -310,182 +187,242 @@ export default function LandingPage({ setCurrentView, showToast }) {
                   max="100"
                   value={heroSheetOpacity}
                   onChange={(e) => setHeroSheetOpacity(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#0F172A]"
+                  className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-white [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md"
                 />
-                <div className="flex items-center gap-2 min-w-[130px] justify-end shrink-0">
-                  <span className="text-[11px] font-mono font-bold text-emerald-700 uppercase tracking-wider">
-                    AI CADASTRAL MAP
-                  </span>
-                </div>
+                <span className="text-[10px] font-mono font-bold text-white tabular-nums shrink-0 w-[38px] text-center">
+                  {Math.round(heroSheetOpacity)}/{Math.round(100 - heroSheetOpacity)}
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider shrink-0">
+                  AI CADASTRAL
+                </span>
               </div>
+
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* ======================================================================= */}
-      {/* SECTION 2: 4-STEP PROCESS FLOW & MULTI-SOURCE EXTRACTION */}
+      {/* SECTION 2: NAKSHA SOP — 3D STACK VISUALIZATION */}
       {/* ======================================================================= */}
       <section
         id="extraction-preview"
-        className="py-24 w-full bg-white border-b border-[#E2E8F0] overflow-hidden"
+        className="relative w-full h-screen bg-[#0F172A] border-b border-[#1E293B]"
       >
-        <div className="max-w-[1520px] w-[94vw] mx-auto px-4 sm:px-8">
+        <div className="max-w-[1520px] w-[94vw] mx-auto px-4 sm:px-8 py-10 sm:py-14 h-full flex flex-col">
           {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-[#F1F5F9] text-[#0F172A] border border-[#CBD5E1]">
-              Platform Technical Components
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] mt-4 mb-4 tracking-tight">
-              Multi-Source AI Engine: Pixels to Validated GIS Parcels
+          <div className="max-w-3xl mb-6">
+            <p className="text-[11px] font-mono font-bold uppercase tracking-[0.22em] text-[#94A3B8] mb-2">
+              NAKSHA STANDARD OPERATING PROCEDURE
+            </p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white mb-2 leading-tight">
+              Four Layer, One dataset.
             </h2>
-            <p className="text-sm sm:text-base text-[#64748B] leading-relaxed">
-              Integrating 2D Nadir & 5-camera Oblique imagery with Digital
-              Surface Models (DSM) and Digital Terrain Models (DTM) to solve
-              dense urban settlements, overlapping rooflines, and irregular
-              geometries.
+            <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed">
+              Four stages from raw drone capture to GIS-ready land records — each layer
+              builds on the last under the National Geospatial Mission framework.
             </p>
           </div>
 
-          {/* 3D Perspective Interactive Stage Container */}
-          <div className="relative w-full max-w-5xl mx-auto rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] p-6 sm:p-10 shadow-lg overflow-hidden">
-            {/* 4 Pipeline Tabs (Replaced per CHANGE 1) */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-[#E2E8F0] mb-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 w-full">
+          {/* 3D Layer Stack Container */}
+          <div className="relative flex gap-6 lg:gap-10 flex-1 min-h-0">
+            {/* Left: Layer Navigation with MAP codes */}
+            <div className="hidden sm:flex flex-col items-center pt-8 relative">
+              {/* Vertical line */}
+              <div className="absolute top-8 bottom-8 left-1/2 -translate-x-1/2 w-px bg-white/16"></div>
+              {/* Layer buttons */}
+              <div className="relative flex flex-col gap-5 z-10">
                 {[
-                  {
-                    id: 0,
-                    label: '01 Upload Survey Data',
-                    sub: 'Drone imagery, orthophotos, DSM/DTM, cadastral scans.',
-                  },
-                  {
-                    id: 1,
-                    label: '02 AI Parcel Extraction',
-                    sub: 'Detect parcel boundaries, buildings, roads, and land features.',
-                  },
-                  {
-                    id: 2,
-                    label: '03 Cadastral Generation',
-                    sub: 'Convert AI detections into GIS-ready parcel layers and cadastral records.',
-                  },
-                  {
-                    id: 3,
-                    label: '04 Verification & QA',
-                    sub: 'Validate topology, compare with legacy records, and prepare final outputs.',
-                  },
-                ].map((st) => (
+                  { id: 0, code: 'Layer-1', label: 'Ground' },
+                  { id: 1, code: 'Layer-2', label: 'Source Plan' },
+                  { id: 2, code: 'Layer-3', label: 'Parcel' },
+                  { id: 3, code: 'Layer-4', label: 'Cadastral' },
+                ].map((btn) => (
                   <button
-                    key={st.id}
-                    onClick={() => {
-                      setPerspectiveStep(st.id);
-                      showToast(`Process Stage: ${st.label}`);
-                    }}
-                    className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
-                      perspectiveStep === st.id
-                        ? 'bg-[#0F172A] text-white shadow-md'
-                        : 'bg-white text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A] border border-[#CBD5E1]'
+                    key={btn.id}
+                    onClick={() => setPerspectiveStep(btn.id)}
+                    className={`flex items-center gap-2.5 text-left transition-all cursor-pointer group ${
+                      perspectiveStep >= btn.id ? 'opacity-100' : 'opacity-40'
                     }`}
                   >
-                    <div className="text-xs font-mono font-bold mb-1">{st.label}</div>
-                    <div className="text-[11px] leading-tight opacity-80">{st.sub}</div>
+                    <span className={`w-2 h-2 rounded-full transition-all ${
+                      perspectiveStep === btn.id ? 'bg-white scale-125' : 'bg-white/40'
+                    }`}></span>
+                    <div className="flex flex-col">
+                      <span className={`text-[9px] font-mono uppercase tracking-wider transition-colors ${
+                        perspectiveStep === btn.id ? 'text-white/90' : 'text-white/30'
+                      }`}>
+                        {btn.code}
+                      </span>
+                      <span className={`text-[10px] font-mono uppercase tracking-wider transition-colors leading-tight ${
+                        perspectiveStep === btn.id ? 'text-white font-bold' : 'text-white/50'
+                      }`}>
+                        {btn.label}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 3D Perspective Stage on Identical Survey Image */}
-            <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-md bg-slate-900 flex items-center justify-center [perspective:1000px]">
-              {/* Ground Base: Orthorectified Imagery */}
-              <div
-                className="absolute inset-4 rounded-xl overflow-hidden transition-all duration-500"
-                style={{
-                  transform: `rotateX(24deg) rotateZ(-12deg) scale(0.95)`,
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                <img
-                  src="/indian_satellite_aerial.jpg"
-                  alt="True Orthorectified Imagery"
-                  className="w-full h-full object-cover brightness-[0.85]"
-                />
-
-                {/* Cadastral Layer on Top */}
-                {(perspectiveStep >= 1) && (
-                  <div
-                    className="absolute inset-8 pointer-events-none transition-all duration-500"
-                    style={{
-                      transform: `translateZ(${vectorElevation}px)`,
-                    }}
-                  >
-                    <svg className="w-full h-full" viewBox="0 0 800 600">
-                      {/* Sy No. 101 Parcel Polygon */}
-                      <polygon
-                        points="40,160 260,110 330,310 90,360"
-                        fill="#10B981"
-                        fillOpacity="0.32"
-                        stroke="#10B981"
-                        strokeWidth="3.5"
-                      />
-                      {/* Sy No. 102 Building Footprint */}
-                      <polygon
-                        points="265,108 520,60 560,260 335,308"
-                        fill="#3B82F6"
-                        fillOpacity="0.32"
-                        stroke="#3B82F6"
-                        strokeWidth="3.5"
-                      />
-                      {/* Sy No. 103 Parcel Polygon */}
-                      <polygon
-                        points="525,58 760,100 780,310 565,258"
-                        fill="#8B5CF6"
-                        fillOpacity="0.32"
-                        stroke="#8B5CF6"
-                        strokeWidth="3.5"
-                      />
-                      {/* Road Corridor Polyline */}
-                      <polyline
-                        points="0,320 330,305 565,255 800,285"
-                        fill="none"
-                        stroke="#06B6D4"
-                        strokeWidth="5"
-                        strokeDasharray="8 6"
-                      />
-                    </svg>
-
-                    {/* GNSS / CORS Ground Truthing Control Points */}
-                    <div className="absolute top-[28%] left-[32%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-[#0F172A] shadow-lg flex items-center justify-center text-[9px] font-bold text-white">
-                        GCP
-                      </div>
-                      <span className="ml-2 bg-white/95 text-[10px] font-mono px-1.5 py-0.5 rounded font-bold text-[#0F172A] shadow-md border border-[#CBD5E1]">
-                        RTK Fixed (±0.02m)
-                      </span>
-                    </div>
-
-                    <div className="absolute top-[65%] right-[25%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-[#0F172A] shadow-lg flex items-center justify-center text-[9px] font-bold text-white">
-                        CORS
-                      </div>
-                      <span className="ml-2 bg-white/95 text-[10px] font-mono px-1.5 py-0.5 rounded font-bold text-[#0F172A] shadow-md border border-[#CBD5E1]">
-                        SOI CORS Network
-                      </span>
+            {/* Center: 3D Isometric Layer Stack */}
+            <div className="flex-1 relative min-h-0 flex flex-col">
+              {/* Layer Info — above the image container */}
+              <div className="mb-3 min-h-[48px] flex items-center">
+                {perspectiveStep === 0 && (
+                  <div>
+                    <p className="text-xs sm:text-sm font-mono font-bold text-white uppercase tracking-wider">Layer 1 · Ground</p>
+                    <p className="text-[11px] sm:text-xs font-mono text-white/60 mt-1 leading-relaxed max-w-lg">Geo-referenced satellite/drone base imagery of the terrain</p>
+                  </div>
+                )}
+                {perspectiveStep === 1 && (
+                  <div>
+                    <p className="text-xs sm:text-sm font-mono font-bold text-white uppercase tracking-wider">Layer 2 · Source Plan</p>
+                    <p className="text-[11px] sm:text-xs font-mono text-white/60 mt-1 leading-relaxed max-w-lg">Revenue survey sketch overlaid with boundary measurements</p>
+                  </div>
+                )}
+                {perspectiveStep === 2 && (
+                  <div>
+                    <p className="text-xs sm:text-sm font-mono font-bold text-white uppercase tracking-wider">Layer 3 · Parcel</p>
+                    <p className="text-[11px] sm:text-xs font-mono text-white/60 mt-1 leading-relaxed max-w-lg">AI-extracted parcel polygons with ownership attribution</p>
+                  </div>
+                )}
+                {perspectiveStep === 3 && (
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <div>
+                      <p className="text-xs sm:text-sm font-mono font-bold text-emerald-300 uppercase tracking-wider">Layer 4 · Cadastral</p>
+                      <p className="text-[11px] sm:text-xs font-mono text-white/70 mt-1 leading-relaxed">Cadastral map created — all layers merged into one GIS-ready dataset</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Bottom Status Pill */}
-              <div className="absolute bottom-4 left-4 z-30 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-[#CBD5E1] text-xs font-mono text-[#0F172A] flex items-center gap-3 shadow-md">
-                <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  Automated Topology Validation Passed
-                </span>
-                <span className="text-[#CBD5E1]">|</span>
-                <span className="font-semibold">0 Gaps · 0 Overlaps Flagged</span>
+              {/* Image container */}
+              <div className="relative flex-1 min-h-0 flex items-center justify-center">
+              <div className="relative aspect-square h-full max-w-full rounded-2xl bg-black border border-white/[0.06] shadow-2xl overflow-hidden"
+                style={{ perspective: '2200px' }}
+              >
+                {/* 3D transformed container */}
+                <div
+                  className="absolute inset-0 z-10 transition-transform duration-700"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: perspectiveStep === 3
+                      ? 'rotateX(0deg) rotateZ(0deg) scale(0.9)'
+                      : 'rotateX(50deg) rotateZ(-40deg) scale(0.55)',
+                    transformOrigin: 'center center',
+                  }}
+                >
+                  {/* Layer 00: Ground */}
+                  <div
+                    className="absolute top-0 left-0 w-full h-full rounded-lg overflow-hidden transition-all duration-700"
+                    style={{
+                      transform: perspectiveStep === 3 ? 'translateZ(0px) scale(0.91)' : 'translateZ(0px)',
+                      opacity: 1,
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    <img
+                      src="/layer-ground.jpg"
+                      alt="Layer 1 — Ground"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Layer 01: Source Plan */}
+                  <div
+                    className={`absolute top-0 left-0 w-full h-full rounded-lg overflow-hidden transition-all duration-700 ${
+                      perspectiveStep >= 1 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{
+                      transform: perspectiveStep === 3
+                        ? 'translateZ(0px) scale(0.91)'
+                        : `translateZ(${perspectiveStep >= 1 ? '80px' : '160px'})`,
+                      boxShadow: '0 25px 70px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    <img
+                      src="/layer-source-plan.jpg"
+                      alt="Layer 2 — Source Plan"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Layer 02: Parcel */}
+                  <div
+                    className={`absolute top-0 left-0 w-full h-full rounded-lg overflow-hidden transition-all duration-700 ${
+                      perspectiveStep >= 2 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{
+                      transform: perspectiveStep === 3
+                        ? 'translateZ(0px) scale(0.91)'
+                        : `translateZ(${perspectiveStep >= 2 ? '160px' : '240px'})`,
+                      boxShadow: '0 30px 80px rgba(0,0,0,0.35)',
+                    }}
+                  >
+                    <img
+                      src="/layer-parcel.jpg"
+                      alt="Layer 3 — Parcel"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Layer 03: Cadastral — flat combined final view */}
+                  {perspectiveStep === 3 && (
+                    <div
+                      className="absolute top-0 left-0 w-full h-full rounded-lg overflow-hidden transition-all duration-700 opacity-100"
+                      style={{
+                        transform: 'translateZ(1px) scale(0.91)',
+                        boxShadow: '0 40px 100px rgba(0,0,0,0.25)',
+                      }}
+                    >
+                      <img
+                        src="/layer-cadastral.jpg"
+                        alt="Layer 4 — Cadastral"
+                        className="w-full h-full object-cover brightness-[0.85]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              </div>
+
+              {/* Mobile layer buttons */}
+              <div className="flex sm:hidden items-center gap-2 mt-4 overflow-x-auto pb-2">
+                {[
+                  { id: 0, label: 'Ground' },
+                  { id: 1, label: 'Source Plan' },
+                  { id: 2, label: 'Parcel' },
+                  { id: 3, label: 'Cadastral' },
+                ].map((btn) => (
+                  <button
+                    key={btn.id}
+                    onClick={() => setPerspectiveStep(btn.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      perspectiveStep === btn.id
+                        ? 'bg-white text-[#0F172A]'
+                        : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    }`}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Progress bar */}
+            <div className="hidden lg:flex flex-col items-center pt-8 pb-8">
+              <div className="relative w-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 w-full bg-white rounded-full transition-all duration-500"
+                  style={{ height: `${((perspectiveStep + 1) / 5) * 100}%` }}
+                ></div>
               </div>
             </div>
           </div>
         </div>
+
       </section>
 
       {/* ======================================================================= */}
@@ -508,13 +445,14 @@ export default function LandingPage({ setCurrentView, showToast }) {
             </p>
           </div>
 
-          {/* 5 Connected Step Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 border border-[#E2E8F0] rounded-2xl bg-white shadow-sm overflow-hidden divide-y md:divide-y-0 md:divide-x divide-[#E2E8F0]">
-            {[
+          {/* Sliding Step Carousel */}
+          {(() => {
+            const steps = [
               {
                 id: 1,
                 time: 'MAP-1.1',
                 icon: UploadCloud,
+                img: '/map-1.1.jpg',
                 title: 'Drone & Elevation Ingestion',
                 desc: 'Ingest raw drone photos (2D Nadir & 5-camera Oblique), True Ortho-Rectified Imagery (ORI), and DSM/DTM elevation models.',
               },
@@ -522,6 +460,7 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 id: 2,
                 time: 'MAP-1.2',
                 icon: Crosshair,
+                img: '/map-1.2.jpg',
                 title: 'GNSS/CORS Coordinate Fix',
                 desc: 'Survey of India Area of Interest (AOI) boundary lock using Ground Control Points (GCPs) and RTK Rover survey data.',
               },
@@ -529,6 +468,7 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 id: 3,
                 time: 'MAP-1.3',
                 icon: Sparkles,
+                img: '/map-1.3.jpg',
                 title: 'AI Parcel & Building Extraction',
                 desc: 'Deep learning models (U-Net/Mask R-CNN) delineate parcel boundaries, building footprints, road corridors, and land-use classes.',
               },
@@ -536,6 +476,7 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 id: 4,
                 time: 'MAP-2.0',
                 icon: CheckCircle2,
+                img: '/map-2.0.jpg',
                 title: 'Ground Truthing (GT) Verification',
                 desc: 'Web-GIS dashboard for field surveyors to cross-check AI preliminary drafts against RTK coordinates and resolve discrepancies.',
               },
@@ -543,53 +484,111 @@ export default function LandingPage({ setCurrentView, showToast }) {
                 id: 5,
                 time: 'MAP-3.0',
                 icon: Download,
+                img: '/map-3.0.jpg',
                 title: 'Land Stack & PostGIS Export',
                 desc: 'Export GIS-ready layers (Shapefile, GeoJSON, PostGIS) directly to TNGIS, ULB tax systems, and National Land Stack.',
               },
-            ].map((step) => {
-              const Icon = step.icon;
-              const isActive = activeWorkflowStep === step.id;
-              return (
-                <div
-                  key={step.id}
-                  onClick={() => {
-                    setActiveWorkflowStep(step.id);
-                    showToast(`NAKSHA Stage: ${step.title}`);
-                  }}
-                  className={`p-7 flex flex-col justify-between cursor-pointer transition-all ${
-                    isActive
-                      ? 'bg-[#F8FAFC] border-t-2 border-t-[#0F172A]'
-                      : 'hover:bg-[#F8FAFC]'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-8">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            ];
+            const current = steps[activeWorkflowStep - 1];
+            return (
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left: Step navigation pills */}
+                <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:w-64 shrink-0">
+                  {steps.map((step) => {
+                    const Icon = step.icon;
+                    const isActive = activeWorkflowStep === step.id;
+                    return (
+                      <button
+                        key={step.id}
+                        onClick={() => setActiveWorkflowStep(step.id)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-left whitespace-nowrap lg:whitespace-normal transition-all cursor-pointer ${
                           isActive
-                            ? 'bg-[#0F172A] text-white shadow-md'
-                            : 'bg-[#F1F5F9] text-[#475569]'
+                            ? 'bg-[#0F172A] text-white shadow-lg'
+                            : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F8FAFC]'
                         }`}
                       >
-                        <Icon className="w-5 h-5" strokeWidth={1.8} />
+                        <Icon className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+                        <div className="flex flex-col">
+                          <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-white/60' : 'text-[#94A3B8]'}`}>
+                            {step.time}
+                          </span>
+                          <span className="text-[12px] font-semibold leading-tight">
+                            {step.title}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Right: Active step content with slide */}
+                <div className="flex-1 min-w-0">
+                  <div className="rounded-2xl overflow-hidden bg-white border border-[#E2E8F0] shadow-lg">
+                    {/* Dominant image */}
+                    <div className="relative w-full h-64 sm:h-80 lg:h-[420px] bg-[#0F172A]">
+                      <img
+                        key={current.id}
+                        src={current.img}
+                        alt={`${current.time} - ${current.title}`}
+                        className="w-full h-full object-contain animate-[fadeSlide_0.4s_ease-out]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                      {/* Overlay info on image */}
+                      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                        <span className="inline-block text-[11px] font-mono font-bold text-white/80 bg-white/15 backdrop-blur-sm px-3 py-1 rounded-lg mb-3">
+                          {current.time}
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
+                          {current.title}
+                        </h3>
+                        <p className="text-sm text-white/80 leading-relaxed max-w-xl">
+                          {current.desc}
+                        </p>
                       </div>
-                      <span className="text-xs font-mono font-semibold text-[#94A3B8]">
-                        {step.time}
-                      </span>
+                      {/* Step counter */}
+                      <div className="absolute top-5 right-5 text-[11px] font-mono font-bold text-white/70 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                        {activeWorkflowStep} / 5
+                      </div>
                     </div>
 
-                    <h3 className="text-base font-bold text-[#0F172A] mb-3 leading-snug">
-                      {step.title}
-                    </h3>
-
-                    <p className="text-xs sm:text-[13px] text-[#64748B] leading-relaxed">
-                      {step.desc}
-                    </p>
+                    {/* Bottom navigation arrows */}
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-[#E2E8F0] bg-[#FAFAFA]">
+                      <button
+                        onClick={() => setActiveWorkflowStep(Math.max(1, activeWorkflowStep - 1))}
+                        disabled={activeWorkflowStep === 1}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed bg-white border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9]"
+                      >
+                        <ArrowRight className="w-4 h-4 rotate-180" />
+                        Previous
+                      </button>
+                      {/* Progress dots */}
+                      <div className="flex gap-1.5">
+                        {steps.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => setActiveWorkflowStep(s.id)}
+                            className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                              activeWorkflowStep === s.id
+                                ? 'bg-[#0F172A] w-5'
+                                : 'bg-[#CBD5E1] hover:bg-[#94A3B8]'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setActiveWorkflowStep(Math.min(5, activeWorkflowStep + 1))}
+                        disabled={activeWorkflowStep === 5}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed bg-[#0F172A] text-white hover:bg-[#1E293B]"
+                      >
+                        Next
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })()}
         </div>
       </section>
 
@@ -682,109 +681,37 @@ export default function LandingPage({ setCurrentView, showToast }) {
       {/* ======================================================================= */}
       {/* SECTION 5: STAKEHOLDER VALUE & PROJECT OUTCOMES */}
       {/* ======================================================================= */}
-      <section id="benefits" className="py-24 w-full bg-[#F8FAFC] border-b border-[#E2E8F0]">
+      <section id="benefits" className="py-20 w-full bg-[#F8FAFC] border-b border-[#E2E8F0]">
         <div className="max-w-[1520px] w-[94vw] mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-[#F1F5F9] text-[#0F172A] border border-[#CBD5E1]">
-                Stakeholders & Impact
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] mt-4 mb-6 tracking-tight">
-                Accelerating Urban Land Governance & Municipal Operations
-              </h2>
-              <p className="text-base text-[#64748B] leading-relaxed mb-8">
-                Bridging the national gap where only 21 of 72 ULBs completed
-                ground truthing due to manual digitization bottlenecks.
-              </p>
+          <div className="max-w-2xl mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] mb-3">
+              National Scale & Impact
+            </h2>
+            <p className="text-sm text-[#64748B] leading-relaxed">
+              Deployed under the DILRMP & National Geospatial Mission to modernize urban land records across India.
+            </p>
+          </div>
 
-              <div className="space-y-4">
-                {[
-                  {
-                    title: 'Land Revenue & Survey Departments (COSS / DoLR)',
-                    desc: 'Review and approve AI-generated draft maps, dramatically reducing turnaround time on official cadastral surveys.',
-                  },
-                  {
-                    title: 'Urban Local Bodies (ULBs) & Municipalities',
-                    desc: 'Accurate property tax demand generation, building permit verification, and detection of illegal encroachments.',
-                  },
-                  {
-                    title: 'Urban Planners & Development Authorities (CMDA)',
-                    desc: 'Infrastructure master planning, zoning, transit-oriented development, and transport corridor modeling.',
-                  },
-                  {
-                    title: 'Ground Truthing Teams & Field Surveyors',
-                    desc: 'Cross-check AI preliminary vectors against GNSS/CORS coordinates on RTK Rovers to quickly resolve boundary errors.',
-                  },
-                ].map((b, i) => (
-                  <div
-                    key={i}
-                    className="p-4.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs flex items-start gap-4"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#15803D] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-4 h-4 font-bold" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0F172A] mb-1">
-                        {b.title}
-                      </h4>
-                      <p className="text-xs text-[#64748B] leading-relaxed">
-                        {b.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-[#E2E8F0] rounded-xl overflow-hidden border border-[#E2E8F0]">
+            <div className="p-6 sm:p-8 bg-white">
+              <span className="text-3xl sm:text-4xl font-black text-[#0F172A] font-mono block mb-1">152</span>
+              <span className="text-xs font-bold text-[#0F172A]">Pilot ULBs</span>
+              <span className="text-[11px] text-[#64748B] block mt-0.5">26 States · 4,142 sq. km</span>
             </div>
-
-            {/* Right Metrics Stat Box (From NAKSHA Document) */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-center">
-                <span className="text-4xl sm:text-5xl font-black text-[#0F172A] font-mono mb-2">
-                  152
-                </span>
-                <span className="text-sm font-bold text-[#0F172A] mb-1">
-                  Pilot ULBs
-                </span>
-                <span className="text-xs text-[#64748B]">
-                  Across 26 States & 3 UTs (4,142 sq. km)
-                </span>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-center">
-                <span className="text-4xl sm:text-5xl font-black text-emerald-600 font-mono mb-2">
-                  4,912
-                </span>
-                <span className="text-sm font-bold text-[#0F172A] mb-1">
-                  Target Scale-Up ULBs
-                </span>
-                <span className="text-xs text-[#64748B]">
-                  National coverage under DILRMP
-                </span>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-center">
-                <span className="text-4xl sm:text-5xl font-black text-amber-600 font-mono mb-2">
-                  ₹194 Cr
-                </span>
-                <span className="text-sm font-bold text-[#0F172A] mb-1">
-                  Central Scheme Funding
-                </span>
-                <span className="text-xs text-[#64748B]">
-                  100% funded by Govt of India
-                </span>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col justify-center">
-                <span className="text-4xl sm:text-5xl font-black text-[#0F172A] font-mono mb-2">
-                  100%
-                </span>
-                <span className="text-sm font-bold text-[#0F172A] mb-1">
-                  TNGIS & PostGIS Ready
-                </span>
-                <span className="text-xs text-[#64748B]">
-                  GeoServer, QGIS & PostGIS compatible
-                </span>
-              </div>
+            <div className="p-6 sm:p-8 bg-white">
+              <span className="text-3xl sm:text-4xl font-black text-[#10B981] font-mono block mb-1">4,912</span>
+              <span className="text-xs font-bold text-[#0F172A]">Scale-Up Target</span>
+              <span className="text-[11px] text-[#64748B] block mt-0.5">National coverage</span>
+            </div>
+            <div className="p-6 sm:p-8 bg-white">
+              <span className="text-3xl sm:text-4xl font-black text-[#B45309] font-mono block mb-1">₹194 Cr</span>
+              <span className="text-xs font-bold text-[#0F172A]">Central Funding</span>
+              <span className="text-[11px] text-[#64748B] block mt-0.5">100% Govt of India</span>
+            </div>
+            <div className="p-6 sm:p-8 bg-white">
+              <span className="text-3xl sm:text-4xl font-black text-[#0F172A] font-mono block mb-1">100%</span>
+              <span className="text-xs font-bold text-[#0F172A]">GIS-Ready</span>
+              <span className="text-[11px] text-[#64748B] block mt-0.5">PostGIS · TNGIS · QGIS</span>
             </div>
           </div>
         </div>

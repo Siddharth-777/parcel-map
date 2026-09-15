@@ -33,6 +33,12 @@ export default function App() {
   const [showLabelsLayer, setShowLabelsLayer] = useState(true);
   const [mapBaseLayer, setMapBaseLayer] = useState('satellite');
 
+  // The user's real uploaded image, and the backend-generated extraction preview
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [extractionStatus, setExtractionStatus] = useState('idle'); // 'idle' | 'processing' | 'done' | 'error'
+  const [extractionImage, setExtractionImage] = useState(null);
+  const [extractionStats, setExtractionStats] = useState(null); // { parcelCount, roadCount, coveragePct }
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -143,13 +149,13 @@ export default function App() {
       {currentView === 'landing' ? (
         <LandingPage setCurrentView={setCurrentView} showToast={showToast} />
       ) : currentView === 'dashboard' ? (
-        <DashboardPage setCurrentView={setCurrentView} showToast={showToast} />
+        <DashboardPage setCurrentView={setCurrentView} showToast={showToast} setUploadedImage={setUploadedImage} setExtractionStatus={setExtractionStatus} setExtractionImage={setExtractionImage} setExtractionStats={setExtractionStats} />
       ) : currentView === 'workspace' ? (
-        <WorkspacePage setCurrentView={setCurrentView} showToast={showToast} {...layerProps} />
+        <WorkspacePage setCurrentView={setCurrentView} showToast={showToast} uploadedImage={uploadedImage} extractionStatus={extractionStatus} extractionImage={extractionImage} {...layerProps} />
       ) : currentView === 'review' ? (
-        <ReviewPage setCurrentView={setCurrentView} showToast={showToast} {...layerProps} />
+        <ReviewPage setCurrentView={setCurrentView} showToast={showToast} uploadedImage={uploadedImage} extractionStatus={extractionStatus} extractionImage={extractionImage} extractionStats={extractionStats} {...layerProps} />
       ) : (
-        <ApprovalPage setCurrentView={setCurrentView} showToast={showToast} />
+        <ApprovalPage setCurrentView={setCurrentView} showToast={showToast} uploadedImage={uploadedImage} extractionStatus={extractionStatus} extractionImage={extractionImage} extractionStats={extractionStats} />
       )}
 
       {/* Global Toast Notification */}

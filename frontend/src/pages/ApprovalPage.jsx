@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   MapContainer,
+  TileLayer,
   Polygon,
   Polyline,
   CircleMarker,
   Popup,
 } from 'react-leaflet';
-import BaseTileLayer from '../components/BaseTileLayer';
 import {
   Check,
   CheckCircle2,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { APPROVAL_PARCELS, APPROVAL_GCP_POINTS, WORKSPACE_ROADS, WORKSPACE_BUILDINGS } from '../data/mockData';
 
-export default function ApprovalPage({ setCurrentView, showToast }) {
+export default function ApprovalPage({ setCurrentView, showToast, uploadedImage, extractionStatus, extractionImage, extractionStats }) {
   const [approvalParcelsList, setApprovalParcelsList] = useState(APPROVAL_PARCELS);
   const [selectedApprovalParcel, setSelectedApprovalParcel] = useState(APPROVAL_PARCELS[3]);
   const [showApprovalParcels, setShowApprovalParcels] = useState(true);
@@ -179,15 +179,15 @@ export default function ApprovalPage({ setCurrentView, showToast }) {
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-[#0F172A]" />
                     <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                      GIS Map Viewer
+                      {extractionStatus === 'done' && extractionImage ? 'AI Cadastral Preview' : 'GIS Map Viewer'}
                     </h3>
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-white border border-[#CBD5E1] text-[#475569]">
-                      EPSG:32644 (UTM 44N) · WGS 84
+                      {extractionStatus === 'done' && extractionImage ? 'Generative Overlay · gpt-image-2' : 'EPSG:32644 (UTM 44N) · WGS 84'}
                     </span>
                   </div>
 
                   {/* ArcGIS-Style Checkbox Layer Controls */}
-                  <div className="flex items-center gap-3.5 text-xs font-medium">
+                  <div className={`flex items-center gap-3.5 text-xs font-medium ${extractionStatus === 'done' && extractionImage ? 'opacity-40' : ''}`}>
                     <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-[#0F172A] select-none">
                       <input
                         type="checkbox"
@@ -236,165 +236,210 @@ export default function ApprovalPage({ setCurrentView, showToast }) {
 
                 {/* Map Viewport */}
                 <div className="relative flex-1 bg-[#0F172A] h-[550px]">
-                  <MapContainer
-                    center={[12.9721, 77.5961]}
-                    zoom={17}
-                    style={{ height: '100%', width: '100%' }}
-                    zoomControl={false}
-                    className="z-0"
-                  >
-                    <BaseTileLayer layer={approvalMapBaseLayer} />
+                  {extractionStatus === 'done' && extractionImage ? (
+                    <img
+                      src={extractionImage}
+                      alt="AI-generated cadastral parcel boundary overlay"
+                      className="w-full h-full object-contain bg-slate-900"
+                    />
+                  ) : (
+                    <MapContainer
+                      center={[12.9721, 77.5961]}
+                      zoom={17}
+                      style={{ height: '100%', width: '100%' }}
+                      zoomControl={false}
+                      className="z-0"
+                    >
+                      {approvalMapBaseLayer === 'satellite' ? (
+                        <TileLayer
+                          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                          attribution="&copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, GIS User Community"
+                        />
+                      ) : (
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution="&copy; OpenStreetMap contributors"
+                        />
+                      )}
 
-                    {/* Render Cadastral Parcels */}
-                    {showApprovalParcels &&
-                      approvalParcelsList.map((p) => {
-                        const isSelected = selectedApprovalParcel.id === p.id;
-                        const fillColor = p.status === 'Approved' ? '#047857' : p.status === 'Flagged' ? '#B91C1C' : '#D97706';
-                        return (
+                      {/* Render Cadastral Parcels */}
+                      {showApprovalParcels &&
+                        approvalParcelsList.map((p) => {
+                          const isSelected = selectedApprovalParcel.id === p.id;
+                          const fillColor = p.status === 'Approved' ? '#047857' : p.status === 'Flagged' ? '#B91C1C' : '#D97706';
+                          return (
+                            <Polygon
+                              key={p.id}
+                              positions={p.coords}
+                              pathOptions={{
+                                color: isSelected ? '#38BDF8' : fillColor,
+                                fillColor: fillColor,
+                                fillOpacity: isSelected ? 0.6 : 0.35,
+                                weight: isSelected ? 3 : 1.5,
+                              }}
+                              eventHandlers={{
+                                click: () => {
+                                  setSelectedApprovalParcel(p);
+                                  showToast(`Selected ${p.id} (${p.area}) · Status: ${p.status}`);
+                                },
+                              }}
+                            >
+                              <Popup>
+                                <div className="text-xs p-1">
+                                  <p className="font-bold text-[#0F172A] text-sm">{p.id} - {p.name}</p>
+                                  <p className="text-[#64748B]">{p.khasraNo}</p>
+                                  <div className="mt-2 space-y-1 font-mono text-[11px]">
+                                    <p>Area: <span className="font-bold">{p.area}</span></p>
+                                    <p>Perimeter: <span className="font-bold">{p.perimeter}</span></p>
+                                    <p>Land Use: <span className="font-bold">{p.landUse}</span></p>
+                                    <p>Status: <span className="font-bold text-[#047857]">{p.status}</span></p>
+                                  </div>
+                                </div>
+                              </Popup>
+                            </Polygon>
+                          );
+                        })}
+
+                      {/* Render Buildings */}
+                      {showApprovalBuildings &&
+                        WORKSPACE_BUILDINGS.map((b) => (
                           <Polygon
-                            key={p.id}
-                            positions={p.coords}
+                            key={b.id}
+                            positions={b.coords}
                             pathOptions={{
-                              color: isSelected ? '#38BDF8' : fillColor,
-                              fillColor: fillColor,
-                              fillOpacity: isSelected ? 0.6 : 0.35,
-                              weight: isSelected ? 3 : 1.5,
-                            }}
-                            eventHandlers={{
-                              click: () => {
-                                setSelectedApprovalParcel(p);
-                                showToast(`Selected ${p.id} (${p.area}) · Status: ${p.status}`);
-                              },
+                              color: '#B91C1C',
+                              fillColor: '#B91C1C',
+                              fillOpacity: 0.65,
+                              weight: 1.5,
                             }}
                           >
                             <Popup>
                               <div className="text-xs p-1">
-                                <p className="font-bold text-[#0F172A] text-sm">{p.id} - {p.name}</p>
-                                <p className="text-[#64748B]">{p.khasraNo}</p>
-                                <div className="mt-2 space-y-1 font-mono text-[11px]">
-                                  <p>Area: <span className="font-bold">{p.area}</span></p>
-                                  <p>Perimeter: <span className="font-bold">{p.perimeter}</span></p>
-                                  <p>Land Use: <span className="font-bold">{p.landUse}</span></p>
-                                  <p>Status: <span className="font-bold text-[#047857]">{p.status}</span></p>
-                                </div>
+                                <p className="font-bold text-[#0F172A]">{b.name}</p>
+                                <p className="text-[#64748B]">Type: Building Footprint</p>
                               </div>
                             </Popup>
                           </Polygon>
-                        );
-                      })}
+                        ))}
 
-                    {/* Render Buildings */}
-                    {showApprovalBuildings &&
-                      WORKSPACE_BUILDINGS.map((b) => (
-                        <Polygon
-                          key={b.id}
-                          positions={b.coords}
-                          pathOptions={{
-                            color: '#B91C1C',
-                            fillColor: '#B91C1C',
-                            fillOpacity: 0.65,
-                            weight: 1.5,
-                          }}
-                        >
-                          <Popup>
-                            <div className="text-xs p-1">
-                              <p className="font-bold text-[#0F172A]">{b.name}</p>
-                              <p className="text-[#64748B]">Type: Building Footprint</p>
-                            </div>
-                          </Popup>
-                        </Polygon>
-                      ))}
+                      {/* Render Roads */}
+                      {showApprovalRoads &&
+                        WORKSPACE_ROADS.map((r) => (
+                          <Polyline
+                            key={r.id}
+                            positions={r.coords}
+                            pathOptions={{
+                              color: '#D97706',
+                              weight: 3.5,
+                              opacity: 0.9,
+                            }}
+                          >
+                            <Popup>
+                              <div className="text-xs p-1">
+                                <p className="font-bold text-[#0F172A]">{r.name}</p>
+                                <p className="text-[#64748B]">Width: 4.5m Village Corridor</p>
+                              </div>
+                            </Popup>
+                          </Polyline>
+                        ))}
 
-                    {/* Render Roads */}
-                    {showApprovalRoads &&
-                      WORKSPACE_ROADS.map((r) => (
-                        <Polyline
-                          key={r.id}
-                          positions={r.coords}
-                          pathOptions={{
-                            color: '#D97706',
-                            weight: 3.5,
-                            opacity: 0.9,
-                          }}
-                        >
-                          <Popup>
-                            <div className="text-xs p-1">
-                              <p className="font-bold text-[#0F172A]">{r.name}</p>
-                              <p className="text-[#64748B]">Width: 4.5m Village Corridor</p>
-                            </div>
-                          </Popup>
-                        </Polyline>
-                      ))}
-
-                    {/* Render Validation Layer (CORS GCPs / Monuments) */}
-                    {showApprovalValidation &&
-                      APPROVAL_GCP_POINTS.map((gcp) => (
-                        <CircleMarker
-                          key={gcp.id}
-                          center={gcp.coords}
-                          radius={5}
-                          pathOptions={{
-                            color: '#1D4ED8',
-                            fillColor: '#3B82F6',
-                            fillOpacity: 0.9,
-                            weight: 2,
-                          }}
-                        >
-                          <Popup>
-                            <div className="text-xs p-1">
-                              <p className="font-bold text-[#0F172A]">{gcp.id} - {gcp.name}</p>
-                              <p className="text-[#64748B]">Classification: {gcp.type}</p>
-                              <p className="text-emerald-600 font-mono text-[10px] font-bold mt-1">✓ RTK Fixed / CORS Locked</p>
-                            </div>
-                          </Popup>
-                        </CircleMarker>
-                      ))}
-                  </MapContainer>
+                      {/* Render Validation Layer (CORS GCPs / Monuments) */}
+                      {showApprovalValidation &&
+                        APPROVAL_GCP_POINTS.map((gcp) => (
+                          <CircleMarker
+                            key={gcp.id}
+                            center={gcp.coords}
+                            radius={5}
+                            pathOptions={{
+                              color: '#1D4ED8',
+                              fillColor: '#3B82F6',
+                              fillOpacity: 0.9,
+                              weight: 2,
+                            }}
+                          >
+                            <Popup>
+                              <div className="text-xs p-1">
+                                <p className="font-bold text-[#0F172A]">{gcp.id} - {gcp.name}</p>
+                                <p className="text-[#64748B]">Classification: {gcp.type}</p>
+                                <p className="text-emerald-600 font-mono text-[10px] font-bold mt-1">✓ RTK Fixed / CORS Locked</p>
+                              </div>
+                            </Popup>
+                          </CircleMarker>
+                        ))}
+                    </MapContainer>
+                  )}
 
                   {/* Floating Controls Toolbar */}
-                  <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-white/95 backdrop-blur-xs p-1 rounded-md border border-[#CBD5E1] shadow-xs">
-                    <button
-                      onClick={() =>
-                        setApprovalMapBaseLayer((prev) => (prev === 'satellite' ? 'osm' : 'satellite'))
-                      }
-                      className="p-1.5 rounded-sm hover:bg-[#F1F5F9] text-[#0F172A] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                      title="Toggle Basemap"
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">
-                        {approvalMapBaseLayer === 'satellite' ? 'Satellite' : 'Vector'}
-                      </span>
-                    </button>
-                    <button
-                      disabled
-                      className="p-1.5 rounded-sm text-[#94A3B8] text-xs font-bold flex items-center gap-1 opacity-50 cursor-not-allowed"
-                      title="Measure Distance (coming soon)"
-                    >
-                      <Ruler className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">Measure</span>
-                    </button>
-                  </div>
+                  {!(extractionStatus === 'done' && extractionImage) && (
+                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-white/95 backdrop-blur-xs p-1 rounded-md border border-[#CBD5E1] shadow-xs">
+                      <button
+                        onClick={() =>
+                          setApprovalMapBaseLayer((prev) => (prev === 'satellite' ? 'osm' : 'satellite'))
+                        }
+                        className="p-1.5 rounded-sm hover:bg-[#F1F5F9] text-[#0F172A] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Toggle Basemap"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">
+                          {approvalMapBaseLayer === 'satellite' ? 'Satellite' : 'Vector'}
+                        </span>
+                      </button>
+                      <button
+                        disabled
+                        className="p-1.5 rounded-sm text-[#94A3B8] text-xs font-bold flex items-center gap-1 opacity-50 cursor-not-allowed"
+                        title="Measure Distance (coming soon)"
+                      >
+                        <Ruler className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">Measure</span>
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Selected Active Parcel Readout on Map */}
-                  <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1.5 rounded-md border border-[#CBD5E1] shadow-xs text-xs font-mono">
-                    <span className="text-[#64748B] block text-[9px] font-bold uppercase tracking-wider font-sans">
-                      Active Selection
-                    </span>
-                    <span className="font-bold text-[#0F172A] text-xs">
-                      {selectedApprovalParcel.id} · {selectedApprovalParcel.area}
-                    </span>
-                    <span
-                      className={`block text-[10px] font-bold ${
-                        selectedApprovalParcel.status === 'Approved'
-                          ? 'text-[#047857]'
-                          : selectedApprovalParcel.status === 'Flagged'
-                          ? 'text-[#B91C1C]'
-                          : 'text-[#D97706]'
-                      }`}
-                    >
-                      ● {selectedApprovalParcel.status}
-                    </span>
-                  </div>
+                  {/* Extraction Stats Overlay (when AI preview is shown) */}
+                  {extractionStatus === 'done' && extractionImage && extractionStats && (
+                    <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-xs px-3 py-2 rounded-md border border-[#CBD5E1] shadow-xs">
+                      <span className="text-[#64748B] block text-[9px] font-bold uppercase tracking-wider font-sans mb-1">
+                        AI Extraction Results
+                      </span>
+                      <div className="space-y-0.5 text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+                          <span className="font-bold text-[#0F172A]">{extractionStats.parcelCount} Parcels</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#B91C1C]" />
+                          <span className="font-bold text-[#0F172A]">{extractionStats.roadCount} Roads</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#047857]" />
+                          <span className="font-bold text-[#0F172A]">{extractionStats.coveragePct}% Coverage</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Active Parcel Readout on Map (only when showing Leaflet map) */}
+                  {!(extractionStatus === 'done' && extractionImage) && (
+                    <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-xs px-2.5 py-1.5 rounded-md border border-[#CBD5E1] shadow-xs text-xs font-mono">
+                      <span className="text-[#64748B] block text-[9px] font-bold uppercase tracking-wider font-sans">
+                        Active Selection
+                      </span>
+                      <span className="font-bold text-[#0F172A] text-xs">
+                        {selectedApprovalParcel.id} · {selectedApprovalParcel.area}
+                      </span>
+                      <span
+                        className={`block text-[10px] font-bold ${
+                          selectedApprovalParcel.status === 'Approved'
+                            ? 'text-[#047857]'
+                            : selectedApprovalParcel.status === 'Flagged'
+                            ? 'text-[#B91C1C]'
+                            : 'text-[#D97706]'
+                        }`}
+                      >
+                        ● {selectedApprovalParcel.status}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Clean Status & Legend Bar at Bottom */}
                   <div className="absolute bottom-2 left-2 right-2 z-10 flex flex-wrap items-center justify-between gap-2 bg-[#0F172A]/90 backdrop-blur-xs px-3 py-1.5 rounded-md border border-white/10 text-[10px] text-white font-mono">
@@ -406,15 +451,31 @@ export default function ApprovalPage({ setCurrentView, showToast }) {
                       <span>GSD: 5.0 cm/px</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1 text-[#34D399]">
-                        <span className="w-2 h-2 rounded-full bg-[#047857]" /> Approved
-                      </span>
-                      <span className="flex items-center gap-1 text-[#FBBF24]">
-                        <span className="w-2 h-2 rounded-full bg-[#D97706]" /> Pending
-                      </span>
-                      <span className="flex items-center gap-1 text-[#F87171]">
-                        <span className="w-2 h-2 rounded-full bg-[#B91C1C]" /> Flagged
-                      </span>
+                      {extractionStatus === 'done' && extractionImage ? (
+                        <>
+                          <span className="flex items-center gap-1 text-[#FBBF24]">
+                            <span className="w-2 h-2 rounded-full bg-[#D97706]" /> Parcels
+                          </span>
+                          <span className="flex items-center gap-1 text-[#F87171]">
+                            <span className="w-2 h-2 rounded-full bg-[#B91C1C]" /> Roads
+                          </span>
+                          <span className="flex items-center gap-1 text-white/60">
+                            AI Generative Preview
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-1 text-[#34D399]">
+                            <span className="w-2 h-2 rounded-full bg-[#047857]" /> Approved
+                          </span>
+                          <span className="flex items-center gap-1 text-[#FBBF24]">
+                            <span className="w-2 h-2 rounded-full bg-[#D97706]" /> Pending
+                          </span>
+                          <span className="flex items-center gap-1 text-[#F87171]">
+                            <span className="w-2 h-2 rounded-full bg-[#B91C1C]" /> Flagged
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
