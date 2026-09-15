@@ -351,6 +351,7 @@ export default function ReviewPage({ setCurrentView, showToast, uploadedImage, e
                   </div>
 
                   <div className="relative flex-1 w-full h-full min-h-[440px] bg-[#E2E8F0]">
+<<<<<<< HEAD:src/pages/ReviewPage.jsx
                     {extractionStatus === 'idle' ? (
                       <MapContainer
                         center={[12.9721, 77.5961]}
@@ -360,6 +361,16 @@ export default function ReviewPage({ setCurrentView, showToast, uploadedImage, e
                         attributionControl={false}
                       >
                         <BaseTileLayer layer={mapBaseLayer} />
+=======
+                    <MapContainer
+                      center={[12.9721, 77.5961]}
+                      zoom={16}
+                      scrollWheelZoom={true}
+                      className="w-full h-full min-h-[440px]"
+                      attributionControl={false}
+                    >
+                      <BaseTileLayer layer={mapBaseLayer} />
+>>>>>>> a0eea592afa078aae1e0060b34982fdf6ceeef2f:FRONTEND/src/pages/ReviewPage.jsx
 
                         {showParcelsLayer &&
                           WORKSPACE_PARCELS.map((p) => (

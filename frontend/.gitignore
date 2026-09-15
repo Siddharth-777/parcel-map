@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,4 +31,15 @@ dist-ssr
 *.sw?
 
 # Environment files
+.env
+.env.local
 bedrock.env
+
+# Uploaded files
+uploads/
+
+# Database artifacts
+*.db
+
+# Build output
+dist/
